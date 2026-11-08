@@ -1,0 +1,17 @@
+# Dependencies
+node_modules/
+
+# Secrets and local settings
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+.venv/
+
+# macOS
+.DS_Store
+
+# Personal learning notes (vibe-wise)
+.vibe-wise/
