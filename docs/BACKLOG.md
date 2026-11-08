@@ -1,40 +1,44 @@
-# Ranked backlog (MVP)
+# Backlog: 15 November demo
 
-Ranked on 2026-11-08, at the end of Sprint 0. This replaces the seven-sprint table in the SRS,
-because about three weeks of November were left.
+Re-planned on 2026-11-08. The deadline is a working app demo on 15 November.
+The pilot with real users follows the demo. The earlier plan (pilot from 23 November) is in Git history.
 
-**Ranking rule:** a feature makes the cut if the two-week pilot needs it to measure a hypothesis.
+## Done
 
-| Hypothesis | Needs |
-| --- | --- |
-| H1: 70% of core phrases rated understandable | Speaking drill, speech check, native-speaker ratings |
-| H2: 40% still practising in week 2 | Streak, daily goal, spaced review |
-| H3: More Kinyarwanda at home (parents) | Parent report form (outside the app) |
-| H4: More confidence (foreigners) | Before/after survey (outside the app) |
-| H5: 80% agreement, model vs native speakers | Speech check, calibration during the pilot |
+- Repo, local MySQL 8.4, API with health check
+- Sign-up and sign-in (email or username), 18+ age gate, argon2id passwords, revocable 30-day sessions
+- Child profiles with parental consent, optional PIN, parent unlock
+- Onboarding answers stored (SRS FR 2.1, FR 2.2)
+- 38 automated API tests
 
 ## Plan
 
-| When | Build | Feeds |
-| --- | --- | --- |
-| Build week 1 (Nov 9-15) | Sign-in and test account; short onboarding (who you are, your goal); home screen; 1 path with 5 lessons, Learn step uses native audio + text | All |
-| Build week 2 (Nov 16-22) | Python speech service; speaking drill; green words and praise ladder; small FSRS spaced review; streak and daily goal; move API and database to Azure | H1, H2, H5 |
-| Pilot (Nov 23 - about Dec 6) | Real users; native speakers rate phrases; calibrate the speech check; fix bugs | H1-H5 |
+| Day | Build |
+| --- | --- |
+| Nov 9 | Phone step A: welcome, who is this for, birth year, sign in, create account |
+| Nov 10 | Step B: onboarding questions and the first "Muraho" listen-and-repeat. Step C: add child, profile picker, home with the lesson path |
+| Nov 11 | Lessons in the database and 5 lessons on screen. Record native audio in the evening |
+| Nov 12 | Python speech service, speaking drill, green words |
+| Nov 13 | Praise ladder, tick and chime sounds, streak and daily goal. Move API, database and speech service to Azure |
+| Nov 14 | Full run-through with native speakers on real phones; fix problems |
+| Nov 15 | Demo |
 
-## After the pilot
+Testers use Expo Go for the demo, so no app-store builds are needed yet.
 
+## After the demo
+
+- Two-week pilot measuring H1-H5
+- Spaced review (FSRS)
 - Video lessons with repeat pauses
 - Offline lesson download
 - Scripted role-plays
 - Saved phrases
 - Progress screen
 - Parent view
-- Second path, lessons 6-10
-- Extra sounds and vibration beyond the basic tick and chime
+- Second path and lessons 6-10
+- Extra sounds and vibration
 
-## Changes from the SRS
+## Notes
 
-- The pilot runs into early December. If November is a hard end, the pilot shrinks to one week and H2 cannot be measured.
-- Azure moves up from the end of Sprint 4 to the end of build week 2.
-- The Learn step uses audio, not video, for the pilot.
-- The speech model needs about 1-2 GB of memory on Azure; check the App Service plan against the student credit in week 2.
+- Azure moves to 13 November because a demo away from home Wi-Fi cannot reach a laptop.
+- The speech model needs about 1-2 GB of memory on Azure; check the plan against the student credit before 13 November.

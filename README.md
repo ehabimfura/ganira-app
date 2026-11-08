@@ -17,7 +17,7 @@ It is built for diaspora families and for foreigners living in Rwanda.
 Requirements: Node 24+, npm, Homebrew, MySQL 8.4.
 
 ```sh
-# Database (local only until build week 2)
+# Database (local only until 13 November)
 brew services start mysql@8.4
 
 # API (first time: cp .env.example .env and fill in DB_PASSWORD)
@@ -38,4 +38,4 @@ Your phone and Mac must be on the same Wi-Fi. If your Mac's IP changes,
 update `EXPO_PUBLIC_API_URL` in `app/.env` (find it with `ipconfig getifaddr en0`).
 
 The local database is `ganira_dev` on `127.0.0.1:3306`.
-The project moves to Azure at the end of build week 2, before the pilot. See [docs/BACKLOG.md](docs/BACKLOG.md).
+The project moves to Azure on 13 November, before the demo. See [docs/BACKLOG.md](docs/BACKLOG.md).
