@@ -1,6 +1,7 @@
 import express, { type NextFunction, type Request, type Response } from "express";
 import { authRoutes } from "./auth/routes.js";
 import type { Database } from "./db.js";
+import { profileRoutes } from "./profiles/routes.js";
 
 export function createApp(db: Database) {
   const app = express();
@@ -18,6 +19,7 @@ export function createApp(db: Database) {
   });
 
   app.use(authRoutes(db));
+  app.use(profileRoutes(db));
 
   // Anything unexpected: log the details here, send the phone a plain message.
   app.use((error: unknown, _req: Request, res: Response, _next: NextFunction) => {

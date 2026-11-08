@@ -62,9 +62,9 @@ describe("sign-up", () => {
     expect(await countAccounts("kid@example.com")).toBe(0);
   });
 
-  test("someone who may still be 17 this year is refused; one surely 18 is accepted", async () => {
-    expect((await signupParent("maybe17@example.com", { birthYear: thisYear - 18 })).status).toBe(403);
-    expect((await signupParent("sure18@example.com", { birthYear: thisYear - 19 })).status).toBe(201);
+  test("age is this year minus birth year: 17 is refused, 18 is accepted", async () => {
+    expect((await signupParent("age17@example.com", { birthYear: thisYear - 17 })).status).toBe(403);
+    expect((await signupParent("age18@example.com", { birthYear: thisYear - 18 })).status).toBe(201);
   });
 
   test("an email already in use is refused, ignoring case and spaces", async () => {

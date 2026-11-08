@@ -2,7 +2,7 @@ import { Router, type Response } from "express";
 import type { ResultSetHeader, RowDataPacket } from "mysql2/promise";
 import { z } from "zod";
 import type { Database } from "../db.js";
-import { isSurelyAdult } from "./age.js";
+import { isAdult } from "./age.js";
 import { hashSecret, MIN_PASSWORD_LENGTH, verifyAgainstDummy, verifySecret } from "./passwords.js";
 import { createRateLimiter } from "./rate-limit.js";
 import { requireSession, type SessionInfo } from "./session.js";
@@ -50,7 +50,7 @@ export function authRoutes(db: Database) {
     const input = parsed.data;
 
     // Under-age: refuse before saving anything, including the email.
-    if (!isSurelyAdult(input.birthYear)) {
+    if (!isAdult(input.birthYear)) {
       res.status(403).json({ error: "UNDER_AGE" });
       return;
     }
