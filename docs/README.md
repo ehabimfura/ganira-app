@@ -16,6 +16,8 @@ They are large Word files, so they are not copied into Git.
 
 ## Sprint plan (from the SRS)
 
+> Superseded on 2026-11-08 by [BACKLOG.md](BACKLOG.md). Kept for reference.
+
 | Sprint | Goal |
 | --- | --- |
 | 0 | Backlog; Expo app, Node API, database, test account |
