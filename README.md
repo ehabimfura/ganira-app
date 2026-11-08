@@ -23,6 +23,8 @@ brew services start mysql@8.4
 # API (first time: cp .env.example .env and fill in DB_PASSWORD)
 cd api
 npm install
+npm run migrate    # create or update tables
+npm run seed:test-account   # test parent "john" + child "Keza" (dev only)
 npm run dev        # http://localhost:3000/health
 npm test
 

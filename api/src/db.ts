@@ -1,9 +1,11 @@
 import mysql from "mysql2/promise";
 
-// The rest of the API talks to the database through this small interface,
-// so tests can swap in a fake without a running MySQL.
+// Routes get the database through this object. `ping` is separate so the
+// health tests can fake a database without a running MySQL.
 export interface Database {
+  pool: mysql.Pool;
   ping(): Promise<void>;
+  close(): Promise<void>;
 }
 
 export interface DbSettings {
@@ -15,11 +17,20 @@ export interface DbSettings {
 }
 
 export function createDatabase(settings: DbSettings): Database {
-  const pool = mysql.createPool({ ...settings, connectionLimit: 5 });
+  // Read and write DATETIME values as UTC, so times match on the Mac and on Azure.
+  const pool = mysql.createPool({ ...settings, connectionLimit: 5, timezone: "Z" });
+  // Make MySQL's own NOW() and CURRENT_TIMESTAMP use UTC too (Azure's default).
+  pool.pool.on("connection", (conn) => {
+    conn.query("SET time_zone = '+00:00'");
+  });
 
   return {
+    pool,
     async ping() {
       await pool.query("SELECT 1");
+    },
+    async close() {
+      await pool.end();
     },
   };
 }

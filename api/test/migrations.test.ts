@@ -1,11 +1,7 @@
 import mysql from "mysql2/promise";
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
-import { config } from "../src/config.js";
 import { runMigrations } from "../src/migrate.js";
-
-// Runs against a separate local database so tests never touch ganira_dev.
-const settings = { ...config.db, database: "ganira_test" };
-const TABLES = ["sessions", "parental_consents", "learners", "accounts", "schema_migrations"];
+import { dropAllTables, TABLES, testDbSettings as settings } from "./test-db.js";
 
 let conn: mysql.Connection;
 
@@ -18,8 +14,8 @@ async function addAccount(email: string, kind = "PARENT") {
 }
 
 beforeAll(async () => {
+  await dropAllTables();
   conn = await mysql.createConnection(settings);
-  for (const table of TABLES) await conn.query(`DROP TABLE IF EXISTS ${table}`);
 });
 
 afterAll(async () => {
