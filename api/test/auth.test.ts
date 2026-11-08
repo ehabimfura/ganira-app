@@ -4,7 +4,7 @@ import { afterAll, beforeAll, describe, expect, test } from "vitest";
 import { createApp } from "../src/app.js";
 import { hashToken } from "../src/auth/tokens.js";
 import { createDatabase } from "../src/db.js";
-import { freshTestDatabase, testDbSettings } from "./test-db.js";
+import { freshTestDatabase, LEARNER_ONBOARDING, testDbSettings, usernameFor } from "./test-db.js";
 
 const db = createDatabase(testDbSettings);
 const app = createApp(db);
@@ -14,11 +14,21 @@ const PASSWORD = "correct horse";
 function signupLearner(email: string, overrides: Record<string, unknown> = {}) {
   return request(app)
     .post("/auth/signup")
-    .send({ email, password: PASSWORD, birthYear: 1995, kind: "LEARNER", nickname: "Ann", avatar: "lion", ...overrides });
+    .send({
+      email,
+      username: usernameFor(email),
+      password: PASSWORD,
+      birthYear: 1995,
+      kind: "LEARNER",
+      nickname: "Ann",
+      avatar: "lion",
+      ...LEARNER_ONBOARDING,
+      ...overrides,
+    });
 }
 
 function signupParent(email: string, overrides: Record<string, unknown> = {}) {
-  return request(app).post("/auth/signup").send({ email, password: PASSWORD, birthYear: 1985, kind: "PARENT", ...overrides });
+  return request(app).post("/auth/signup").send({ email, username: usernameFor(email), password: PASSWORD, birthYear: 1985, kind: "PARENT", ...overrides });
 }
 
 function me(token: string) {
@@ -39,9 +49,18 @@ describe("sign-up", () => {
     expect(res.status).toBe(201);
 
     const profile = await me(res.body.token);
-    expect(profile.body.account).toMatchObject({ email: "ann@example.com", kind: "LEARNER" });
+    expect(profile.body.account).toMatchObject({ email: "ann@example.com", username: "ann", kind: "LEARNER" });
     expect(profile.body.profiles).toEqual([
-      { id: expect.any(Number), kind: "SELF", nickname: "Ann", avatar: "lion", hasPin: false },
+      {
+        id: expect.any(Number),
+        kind: "SELF",
+        nickname: "Ann",
+        avatar: "lion",
+        path: "LIVING_IN_RWANDA",
+        level: "NEW",
+        dailyGoalMinutes: 10,
+        hasPin: false,
+      },
     ]);
     expect(profile.body.activeProfileId).toBe(profile.body.profiles[0].id);
   });
@@ -69,9 +88,28 @@ describe("sign-up", () => {
 
   test("an email already in use is refused, ignoring case and spaces", async () => {
     await signupParent("taken@example.com");
-    const res = await signupParent("  TAKEN@example.com ");
+    const res = await signupParent("  TAKEN@example.com ", { username: "different_name" });
     expect(res.status).toBe(409);
     expect(res.body).toEqual({ error: "EMAIL_TAKEN" });
+  });
+
+  test("a username already in use is refused, ignoring case", async () => {
+    await signupParent("first@example.com", { username: "keza_mama" });
+    const res = await signupParent("second@example.com", { username: "Keza_Mama" });
+    expect(res.status).toBe(409);
+    expect(res.body).toEqual({ error: "USERNAME_TAKEN" });
+  });
+
+  test("usernames are 3-20 letters, numbers or _", async () => {
+    expect((await signupParent("u1@example.com", { username: "ab" })).status).toBe(400);
+    expect((await signupParent("u2@example.com", { username: "has space" })).status).toBe(400);
+    expect((await signupParent("u3@example.com", { username: "a".repeat(21) })).status).toBe(400);
+  });
+
+  test("a learner must answer the onboarding questions, with allowed values", async () => {
+    expect((await signupLearner("noanswers@example.com", { path: undefined })).status).toBe(400);
+    expect((await signupLearner("badgoal@example.com", { dailyGoalMinutes: 7 })).status).toBe(400);
+    expect((await signupLearner("badrole@example.com", { learnerRole: "PILOT" })).status).toBe(400);
   });
 
   test("bad input gets a 400: short password, missing nickname, broken JSON", async () => {
@@ -97,7 +135,7 @@ describe("sign-in and sign-out", () => {
   });
 
   test("the right password returns a working token; only its hash is stored", async () => {
-    const res = await request(app).post("/auth/signin").send({ email: "bob@example.com", password: PASSWORD });
+    const res = await request(app).post("/auth/signin").send({ login: "bob@example.com", password: PASSWORD });
     expect(res.status).toBe(200);
     expect((await me(res.body.token)).status).toBe(200);
 
@@ -107,9 +145,15 @@ describe("sign-in and sign-out", () => {
     expect(rows[0].n).toBe(1);
   });
 
+  test("the username works in the same login box, in any case", async () => {
+    const res = await request(app).post("/auth/signin").send({ login: "BOB", password: PASSWORD });
+    expect(res.status).toBe(200);
+    expect((await me(res.body.token)).body.account.username).toBe("bob");
+  });
+
   test("a wrong password and an unknown email get the same answer", async () => {
-    const wrong = await request(app).post("/auth/signin").send({ email: "bob@example.com", password: "nope-nope" });
-    const unknown = await request(app).post("/auth/signin").send({ email: "nobody@example.com", password: "nope-nope" });
+    const wrong = await request(app).post("/auth/signin").send({ login: "bob@example.com", password: "nope-nope" });
+    const unknown = await request(app).post("/auth/signin").send({ login: "nobody@example.com", password: "nope-nope" });
     expect(wrong.status).toBe(401);
     expect(unknown.status).toBe(401);
     expect(wrong.body).toEqual(unknown.body);
@@ -118,9 +162,9 @@ describe("sign-in and sign-out", () => {
   test("after 10 failed tries the 11th is blocked, even with the right password", async () => {
     await signupParent("guess@example.com");
     for (let i = 0; i < 10; i++) {
-      await request(app).post("/auth/signin").send({ email: "guess@example.com", password: "wrong-guess" });
+      await request(app).post("/auth/signin").send({ login: "guess@example.com", password: "wrong-guess" });
     }
-    const res = await request(app).post("/auth/signin").send({ email: "guess@example.com", password: PASSWORD });
+    const res = await request(app).post("/auth/signin").send({ login: "guess@example.com", password: PASSWORD });
     expect(res.status).toBe(429);
   });
 
@@ -139,7 +183,7 @@ describe("sign-in and sign-out", () => {
   });
 
   test("signing out ends the session", async () => {
-    const { body } = await request(app).post("/auth/signin").send({ email: "bob@example.com", password: PASSWORD });
+    const { body } = await request(app).post("/auth/signin").send({ login: "bob@example.com", password: PASSWORD });
     const out = await request(app).post("/auth/signout").set("Authorization", `Bearer ${body.token}`);
     expect(out.status).toBe(204);
     expect((await me(body.token)).status).toBe(401);

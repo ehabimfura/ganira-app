@@ -5,6 +5,7 @@ import { hashSecret, verifySecret } from "../auth/passwords.js";
 import { createRateLimiter } from "../auth/rate-limit.js";
 import { requireSession, type SessionInfo } from "../auth/session.js";
 import type { Database } from "../db.js";
+import { dailyGoal, level } from "../onboarding.js";
 
 export const MAX_CHILDREN = 6;
 const WINDOW_MS = 15 * 60 * 1000;
@@ -18,6 +19,9 @@ const createChildSchema = z.object({
   nickname: z.string().trim().min(1).max(40),
   avatar: z.string().trim().min(1).max(50),
   ageRange: z.string().trim().max(20).optional(),
+  // The parent answers these for the child; a child's path is always Family.
+  level,
+  dailyGoalMinutes: dailyGoal,
   pin: pin.optional(),
   // The parent must tick "I am this child's parent or guardian".
   consent: z.literal(true),
@@ -77,9 +81,18 @@ export function profileRoutes(db: Database) {
       // The child and the parent's consent are saved together or not at all.
       await conn.beginTransaction();
       const [child] = await conn.query<ResultSetHeader>(
-        `INSERT INTO learners (account_id, kind, nickname, avatar, age_range, pin_hash)
-         VALUES (?, 'CHILD', ?, ?, ?, ?)`,
-        [session.accountId, input.nickname, input.avatar, input.ageRange ?? null, pinHash],
+        `INSERT INTO learners
+           (account_id, kind, path, level, daily_goal_minutes, nickname, avatar, age_range, pin_hash)
+         VALUES (?, 'CHILD', 'FAMILY', ?, ?, ?, ?, ?, ?)`,
+        [
+          session.accountId,
+          input.level,
+          input.dailyGoalMinutes,
+          input.nickname,
+          input.avatar,
+          input.ageRange ?? null,
+          pinHash,
+        ],
       );
       await conn.query("INSERT INTO parental_consents (parent_account_id, learner_id) VALUES (?, ?)", [
         session.accountId,

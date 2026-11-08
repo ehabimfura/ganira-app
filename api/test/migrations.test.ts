@@ -1,14 +1,14 @@
 import mysql from "mysql2/promise";
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
 import { runMigrations } from "../src/migrate.js";
-import { dropAllTables, TABLES, testDbSettings as settings } from "./test-db.js";
+import { dropAllTables, TABLES, testDbSettings as settings, usernameFor } from "./test-db.js";
 
 let conn: mysql.Connection;
 
 async function addAccount(email: string, kind = "PARENT") {
   const [result] = await conn.query<mysql.ResultSetHeader>(
-    "INSERT INTO accounts (email, password_hash, kind, birth_year) VALUES (?, 'x', ?, 1990)",
-    [email, kind],
+    "INSERT INTO accounts (email, username, password_hash, kind, birth_year) VALUES (?, ?, 'x', ?, 1990)",
+    [email, usernameFor(email), kind],
   );
   return result.insertId;
 }
@@ -23,9 +23,9 @@ afterAll(async () => {
 });
 
 describe("migrations", () => {
-  test("first run applies 001 and creates the account tables", async () => {
+  test("first run applies every migration and creates the account tables", async () => {
     const applied = await runMigrations(settings);
-    expect(applied).toEqual(["001_accounts.sql"]);
+    expect(applied).toEqual(["001_accounts.sql", "002_onboarding.sql"]);
 
     const [rows] = await conn.query<mysql.RowDataPacket[]>("SHOW TABLES");
     const names = rows.map((row) => Object.values(row)[0]);

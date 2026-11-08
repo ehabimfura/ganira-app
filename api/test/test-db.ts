@@ -22,3 +22,16 @@ export async function freshTestDatabase(): Promise<void> {
 }
 
 export { TABLES };
+
+// A valid username made from an email, e.g. "big-family@x.com" -> "bigfamily".
+export function usernameFor(email: string): string {
+  return email.trim().toLowerCase().split("@")[0].replace(/[^a-z0-9_]/g, "").slice(0, 20);
+}
+
+export const LEARNER_ONBOARDING = {
+  nativeLanguage: "English",
+  path: "LIVING_IN_RWANDA",
+  learnerRole: "TEACHER",
+  level: "NEW",
+  dailyGoalMinutes: 10,
+};

@@ -12,6 +12,7 @@ async function main() {
     throw new Error("Refusing to create the test account in production.");
   }
   const email = process.env.TEST_ACCOUNT_EMAIL;
+  const username = process.env.TEST_ACCOUNT_USERNAME ?? "john";
   const password = process.env.TEST_ACCOUNT_PASSWORD;
   if (!email || !password) {
     throw new Error("Set TEST_ACCOUNT_EMAIL and TEST_ACCOUNT_PASSWORD in .env first.");
@@ -26,18 +27,19 @@ async function main() {
     }
 
     const [account] = await db.pool.query<ResultSetHeader>(
-      "INSERT INTO accounts (email, password_hash, kind, birth_year) VALUES (?, ?, 'PARENT', ?)",
-      [email, await hashSecret(password), TEST_BIRTH_YEAR],
+      "INSERT INTO accounts (email, username, password_hash, kind, birth_year) VALUES (?, ?, ?, 'PARENT', ?)",
+      [email, username, await hashSecret(password), TEST_BIRTH_YEAR],
     );
     const [child] = await db.pool.query<ResultSetHeader>(
-      "INSERT INTO learners (account_id, kind, nickname, avatar, age_range) VALUES (?, 'CHILD', 'Keza', 'giraffe', '6-9')",
+      `INSERT INTO learners (account_id, kind, path, level, daily_goal_minutes, nickname, avatar, age_range)
+       VALUES (?, 'CHILD', 'FAMILY', 'NEW', 10, 'Keza', 'giraffe', '6-9')`,
       [account.insertId],
     );
     await db.pool.query("INSERT INTO parental_consents (parent_account_id, learner_id) VALUES (?, ?)", [
       account.insertId,
       child.insertId,
     ]);
-    console.log(`Created test parent ${email} with child profile Keza.`);
+    console.log(`Created test parent ${username} (${email}) with child profile Keza.`);
   } finally {
     await db.close();
   }

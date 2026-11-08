@@ -4,7 +4,7 @@ import { afterAll, beforeAll, describe, expect, test } from "vitest";
 import { createApp } from "../src/app.js";
 import { createDatabase } from "../src/db.js";
 import { MAX_CHILDREN } from "../src/profiles/routes.js";
-import { freshTestDatabase, testDbSettings } from "./test-db.js";
+import { freshTestDatabase, LEARNER_ONBOARDING, testDbSettings, usernameFor } from "./test-db.js";
 
 const db = createDatabase(testDbSettings);
 const app = createApp(db);
@@ -13,7 +13,7 @@ const PASSWORD = "parent password";
 async function signupParent(email: string): Promise<string> {
   const res = await request(app)
     .post("/auth/signup")
-    .send({ email, password: PASSWORD, birthYear: 1985, kind: "PARENT" });
+    .send({ email, username: usernameFor(email), password: PASSWORD, birthYear: 1985, kind: "PARENT" });
   return res.body.token;
 }
 
@@ -21,7 +21,7 @@ function as(token: string) {
   const auth = { Authorization: `Bearer ${token}` };
   return {
     addChild: (body: Record<string, unknown>) =>
-      request(app).post("/profiles").set(auth).send({ nickname: "Keza", avatar: "giraffe", consent: true, ...body }),
+      request(app).post("/profiles").set(auth).send({ nickname: "Keza", avatar: "giraffe", level: "NEW", dailyGoalMinutes: 5, consent: true, ...body }),
     select: (id: number, body: Record<string, unknown> = {}) =>
       request(app).post(`/profiles/${id}/select`).set(auth).send(body),
     setPin: (id: number, pin: string | null) => request(app).put(`/profiles/${id}/pin`).set(auth).send({ pin }),
@@ -49,8 +49,22 @@ describe("child profiles", () => {
     ]);
     expect(rows[0].n).toBe(1);
     expect((await parent.me()).body.profiles).toEqual([
-      { id: res.body.id, kind: "CHILD", nickname: "Keza", avatar: "giraffe", hasPin: false },
+      {
+        id: res.body.id,
+        kind: "CHILD",
+        nickname: "Keza",
+        avatar: "giraffe",
+        path: "FAMILY",
+        level: "NEW",
+        dailyGoalMinutes: 5,
+        hasPin: false,
+      },
     ]);
+  });
+
+  test("the parent must answer level and daily goal for the child", async () => {
+    expect((await parent.addChild({ level: undefined })).status).toBe(400);
+    expect((await parent.addChild({ dailyGoalMinutes: 20 })).status).toBe(400);
   });
 
   test("no consent, no child", async () => {
@@ -66,7 +80,16 @@ describe("child profiles", () => {
   test("a learner account cannot add children", async () => {
     const res = await request(app)
       .post("/auth/signup")
-      .send({ email: "solo@example.com", password: PASSWORD, birthYear: 1990, kind: "LEARNER", nickname: "Sam", avatar: "lion" });
+      .send({
+        email: "solo@example.com",
+        username: "solo",
+        password: PASSWORD,
+        birthYear: 1990,
+        kind: "LEARNER",
+        nickname: "Sam",
+        avatar: "lion",
+        ...LEARNER_ONBOARDING,
+      });
     expect((await as(res.body.token).addChild({})).status).toBe(403);
   });
 

@@ -2,6 +2,7 @@ import { Router, type Response } from "express";
 import type { ResultSetHeader, RowDataPacket } from "mysql2/promise";
 import { z } from "zod";
 import type { Database } from "../db.js";
+import { learnerOnboarding } from "../onboarding.js";
 import { isAdult } from "./age.js";
 import { hashSecret, MIN_PASSWORD_LENGTH, verifyAgainstDummy, verifySecret } from "./passwords.js";
 import { createRateLimiter } from "./rate-limit.js";
@@ -12,8 +13,14 @@ const SIGNIN_MAX_ATTEMPTS = 10;
 const SIGNIN_WINDOW_MS = 15 * 60 * 1000;
 
 const email = z.string().trim().toLowerCase().pipe(z.email().max(254));
+// Stored lowercase, so "John" and "john" are the same person.
+const username = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .pipe(z.string().regex(/^[a-z0-9_]{3,20}$/, "3-20 letters, numbers or _"));
 const password = z.string().min(MIN_PASSWORD_LENGTH).max(200);
-const adultFields = { email, password, birthYear: z.number().int().min(1900) };
+const adultFields = { email, username, password, birthYear: z.number().int().min(1900) };
 
 const signupSchema = z.discriminatedUnion("kind", [
   z.object({ ...adultFields, kind: z.literal("PARENT") }),
@@ -22,10 +29,21 @@ const signupSchema = z.discriminatedUnion("kind", [
     kind: z.literal("LEARNER"),
     nickname: z.string().trim().min(1).max(40),
     avatar: z.string().trim().min(1).max(50),
+    ...learnerOnboarding,
   }),
 ]);
 
-const signinSchema = z.object({ email, password: z.string().min(1).max(200) });
+// One box for email or username: anything with "@" is treated as an email.
+const signinSchema = z.object({
+  login: z.string().trim().toLowerCase().min(1).max(254),
+  password: z.string().min(1).max(200),
+});
+
+function duplicateError(error: unknown): string | null {
+  const { code, message } = error as { code?: string; message?: string };
+  if (code !== "ER_DUP_ENTRY") return null;
+  return message?.includes("uq_accounts_username") ? "USERNAME_TAKEN" : "EMAIL_TAKEN";
+}
 
 function invalidInput(res: Response, error: z.ZodError) {
   res.status(400).json({ error: "INVALID_INPUT", issues: z.flattenError(error).fieldErrors });
@@ -63,22 +81,34 @@ export function authRoutes(db: Database) {
       // Account and its SELF profile are saved together or not at all.
       await conn.beginTransaction();
       const [account] = await conn.query<ResultSetHeader>(
-        "INSERT INTO accounts (email, password_hash, kind, birth_year) VALUES (?, ?, ?, ?)",
-        [input.email, passwordHash, input.kind, input.birthYear],
+        "INSERT INTO accounts (email, username, password_hash, kind, birth_year) VALUES (?, ?, ?, ?, ?)",
+        [input.email, input.username, passwordHash, input.kind, input.birthYear],
       );
       accountId = account.insertId;
       if (input.kind === "LEARNER") {
         const [learner] = await conn.query<ResultSetHeader>(
-          "INSERT INTO learners (account_id, kind, nickname, avatar) VALUES (?, 'SELF', ?, ?)",
-          [accountId, input.nickname, input.avatar],
+          `INSERT INTO learners
+             (account_id, kind, nickname, avatar, native_language, path, learner_role, level, daily_goal_minutes)
+           VALUES (?, 'SELF', ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            accountId,
+            input.nickname,
+            input.avatar,
+            input.nativeLanguage,
+            input.path,
+            input.learnerRole,
+            input.level,
+            input.dailyGoalMinutes,
+          ],
         );
         selfLearnerId = learner.insertId;
       }
       await conn.commit();
     } catch (error) {
       await conn.rollback();
-      if ((error as { code?: string }).code === "ER_DUP_ENTRY") {
-        res.status(409).json({ error: "EMAIL_TAKEN" });
+      const duplicate = duplicateError(error);
+      if (duplicate) {
+        res.status(409).json({ error: duplicate });
         return;
       }
       throw error;
@@ -95,7 +125,8 @@ export function authRoutes(db: Database) {
     if (!parsed.success) return invalidInput(res, parsed.error);
     const input = parsed.data;
 
-    const limitKey = `${input.email}|${req.ip}`;
+    const limitKey = `${input.login}|${req.ip}`;
+    const column = input.login.includes("@") ? "email" : "username";
     if (!signinLimiter.tryAttempt(limitKey)) {
       res.status(429).json({ error: "TOO_MANY_ATTEMPTS" });
       return;
@@ -104,8 +135,8 @@ export function authRoutes(db: Database) {
     const [rows] = await db.pool.query<RowDataPacket[]>(
       `SELECT a.id, a.password_hash, a.kind,
               (SELECT l.id FROM learners l WHERE l.account_id = a.id AND l.kind = 'SELF') AS self_id
-         FROM accounts a WHERE a.email = ?`,
-      [input.email],
+         FROM accounts a WHERE a.${column} = ?`,
+      [input.login],
     );
     const account = rows[0];
     const ok = account
@@ -113,7 +144,7 @@ export function authRoutes(db: Database) {
       : await verifyAgainstDummy(input.password);
     if (!account || !ok) {
       // Same message either way, so it doesn't reveal which emails have accounts.
-      res.status(401).json({ error: "WRONG_EMAIL_OR_PASSWORD" });
+      res.status(401).json({ error: "WRONG_LOGIN_OR_PASSWORD" });
       return;
     }
 
@@ -131,11 +162,11 @@ export function authRoutes(db: Database) {
   router.get("/me", requireSession(db), async (_req, res) => {
     const session: SessionInfo = res.locals.session;
     const [accounts] = await db.pool.query<RowDataPacket[]>(
-      "SELECT id, email, kind FROM accounts WHERE id = ?",
+      "SELECT id, email, username, kind FROM accounts WHERE id = ?",
       [session.accountId],
     );
     const [learners] = await db.pool.query<RowDataPacket[]>(
-      `SELECT id, kind, nickname, avatar, pin_hash IS NOT NULL AS has_pin
+      `SELECT id, kind, nickname, avatar, path, level, daily_goal_minutes, pin_hash IS NOT NULL AS has_pin
          FROM learners WHERE account_id = ? ORDER BY id`,
       [session.accountId],
     );
@@ -146,6 +177,9 @@ export function authRoutes(db: Database) {
         kind: l.kind,
         nickname: l.nickname,
         avatar: l.avatar,
+        path: l.path,
+        level: l.level,
+        dailyGoalMinutes: l.daily_goal_minutes,
         hasPin: Boolean(l.has_pin),
       })),
       activeProfileId: session.activeLearnerId,
