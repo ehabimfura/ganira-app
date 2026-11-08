@@ -15,3 +15,6 @@ __pycache__/
 
 # Personal learning notes (vibe-wise)
 .vibe-wise/
+
+# End-to-end screenshots
+e2e/shots/

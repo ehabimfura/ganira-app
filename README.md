@@ -11,6 +11,7 @@ It is built for diaspora families and for foreigners living in Rwanda.
 | `api/` | Node.js API (Express 5, TypeScript, mysql2) | Sprint 0: `/health` |
 | `speech/` | Python speech-recognition service | Not started (Sprint 3) |
 | `docs/` | Pointers to the SRS and UML diagrams | Done |
+| `e2e/` | Browser click-through tests of the app screens | Step A |
 
 ## Local development
 
@@ -33,6 +34,9 @@ cd app
 npm install
 npm start          # then scan the QR code with Expo Go
 ```
+
+To click through the screens automatically: start the API and `npx expo start --web` in `app/`,
+then `cd e2e && npm install && npm run step-a`.
 
 Your phone and Mac must be on the same Wi-Fi. If your Mac's IP changes,
 update `EXPO_PUBLIC_API_URL` in `app/.env` (find it with `ipconfig getifaddr en0`).

@@ -18,6 +18,16 @@ describe("GET /health", () => {
     expect(res.body).toEqual({ status: "ok", database: "ok" });
   });
 
+  test("only listed browser origins get CORS headers", async () => {
+    const app = createApp(fakeDb(async () => {}), { corsOrigins: ["http://localhost:8081"] });
+
+    const allowed = await request(app).get("/health").set("Origin", "http://localhost:8081");
+    const other = await request(app).get("/health").set("Origin", "http://evil.example");
+
+    expect(allowed.headers["access-control-allow-origin"]).toBe("http://localhost:8081");
+    expect(other.headers["access-control-allow-origin"]).toBeUndefined();
+  });
+
   test("returns 503 when the database is unreachable", async () => {
     const db = fakeDb(async () => {
       throw new Error("connect ECONNREFUSED");

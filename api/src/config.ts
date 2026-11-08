@@ -16,6 +16,7 @@ function required(name: string): string {
 
 export const config = {
   port: Number(process.env.PORT ?? 3000),
+  corsOrigins: (process.env.CORS_ORIGINS ?? "").split(",").map((o) => o.trim()).filter(Boolean),
   db: {
     host: required("DB_HOST"),
     port: Number(process.env.DB_PORT ?? 3306),
