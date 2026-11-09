@@ -1,6 +1,23 @@
+import Constants from 'expo-constants';
+import { Platform } from 'react-native';
+
 // Talks to the Ganira API. Every screen goes through here, so errors look the same everywhere.
-const API_URL = process.env.EXPO_PUBLIC_API_URL;
+const DEV_API_PORT = 3000;
 const TIMEOUT_MS = 10000;
+
+// EXPO_PUBLIC_API_URL wins when set (e.g. the Azure address). Otherwise, in development,
+// the API is assumed to run on the same computer that serves the app, so a Wi-Fi change
+// never leaves the phone pointing at an old address.
+function resolveApiUrl(): string | undefined {
+  if (process.env.EXPO_PUBLIC_API_URL) return process.env.EXPO_PUBLIC_API_URL;
+  if (!__DEV__) return undefined;
+  const host =
+    Constants.expoConfig?.hostUri?.split(':')[0] ??
+    (Platform.OS === 'web' ? globalThis.location?.hostname : undefined);
+  return host ? `http://${host}:${DEV_API_PORT}` : undefined;
+}
+
+const API_URL = resolveApiUrl();
 
 export class ApiError extends Error {
   constructor(

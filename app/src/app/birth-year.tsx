@@ -2,12 +2,14 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Button, ErrorText, Field, Screen, Title } from '@/components/ui';
 import { isAdult, parseBirthYear } from '@/lib/age';
+import { useOnboardingDraft } from '@/lib/onboarding-draft';
 
 export default function BirthYear() {
   const params = useLocalSearchParams<{ for: string }>();
   const forWhom = params.for === 'child' ? 'child' : 'me';
   const [text, setText] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const { update } = useOnboardingDraft();
 
   const next = () => {
     const year = parseBirthYear(text.trim());
@@ -20,7 +22,13 @@ export default function BirthYear() {
       router.replace({ pathname: '/under-age', params: { for: forWhom } });
       return;
     }
-    router.push({ pathname: '/create-account', params: { for: forWhom, birthYear: String(year) } });
+    if (forWhom === 'child') {
+      router.push({ pathname: '/create-account', params: { for: 'child', birthYear: String(year) } });
+      return;
+    }
+    // A learner answers the questions and does the first lesson before making an account.
+    update({ birthYear: year });
+    router.push('/level');
   };
 
   return (

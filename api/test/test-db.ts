@@ -29,9 +29,6 @@ export function usernameFor(email: string): string {
 }
 
 export const LEARNER_ONBOARDING = {
-  nativeLanguage: "English",
-  path: "LIVING_IN_RWANDA",
-  learnerRole: "TEACHER",
   level: "NEW",
   dailyGoalMinutes: 10,
 };

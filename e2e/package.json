@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "step-a": "node step-a.mjs ../api/.env"
+    "test": "node app-flows.mjs ../api/.env"
   },
   "devDependencies": {
     "playwright": "^1.65.0"

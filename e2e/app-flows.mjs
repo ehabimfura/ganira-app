@@ -1,10 +1,13 @@
-// End-to-end check of phone step A in headless Chromium.
+// End-to-end check of the app's screens in headless Chromium.
 // Needs the API (cd api && npm start) and the web build (cd app && npx expo start --web) running.
 import { chromium } from 'playwright';
-import { readFileSync } from 'node:fs';
+import { mkdirSync, readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 
 const BASE = 'http://localhost:8081';
-const SHOTS = new URL('./shots/', import.meta.url).pathname;
+// fileURLToPath keeps spaces in folder names ("Tedx ") instead of turning them into %20.
+const SHOTS = fileURLToPath(new URL('./shots/', import.meta.url));
+mkdirSync(SHOTS, { recursive: true });
 const env = Object.fromEntries(
   readFileSync(process.argv[2], 'utf8').split('\n').filter((l) => l.includes('=')).map((l) => l.split(/=(.*)/s).slice(0, 2)),
 );
@@ -55,11 +58,38 @@ await check('parent path asks for the parent year and explains a child year', as
   await text('(parent or guardian)');
 });
 
-await check('learner sign-up: short password is caught, then account is created', async () => {
+await check('save-progress without answers sends the learner back to the start', async () => {
+  await page.goto(`${BASE}/create-account?for=me`);
+  await text('Who is Ganira for?');
+});
+
+await check('learner answers level and daily goal', async () => {
   await page.goto(`${BASE}/birth-year?for=me`);
   await fill('Birth year', '1992');
   await page.keyboard.press('Enter');
+  await text('How much Kinyarwanda do you know?');
+  await page.getByRole('radio', { name: 'I know a few words' }).click();
+  await page.screenshot({ path: `${SHOTS}4-level.png` });
+  await tap('Continue');
+  await text('How much time a day?');
+  await page.getByRole('radio', { name: '15 minutes a day' }).click();
+  await tap('Continue');
+});
+
+await check('first lesson: listen, say it, then continue (no skip)', async () => {
+  await text('Your first word');
+  if (await page.getByRole('button', { name: 'I said it' }).count()) throw new Error('"I said it" shown before listening');
+  if (await page.getByRole('button', { name: 'Continue' }).count()) throw new Error('Continue shown before speaking');
+  await tap('🔊 Listen');
+  await text('Now say it out loud!');
+  await page.screenshot({ path: `${SHOTS}5-first-lesson.png` });
+  await tap('I said it');
+  await page.getByLabel('Done').waitFor({ timeout: 8000 });
+  await tap('Continue');
   await text('Save your progress');
+});
+
+await check('learner sign-up: short password is caught, then account is created', async () => {
   await fill('Nickname', 'Amina');
   await tap('leopard');
   await fill('Email', `amina${stamp}@example.com`);
@@ -67,12 +97,12 @@ await check('learner sign-up: short password is caught, then account is created'
   await fill('Password', 'short');
   await tap('Create account');
   await text('at least 8 characters');
-  await page.screenshot({ path: `${SHOTS}4-create-account-error.png` });
+  await page.screenshot({ path: `${SHOTS}6-create-account-error.png` });
   await fill('Password', 'correct horse');
   await tap('Create account');
   await text('Muraho, Amina!');
-  await text('daily goal 10 minutes');
-  await page.screenshot({ path: `${SHOTS}5-home-learner.png` });
+  await text('daily goal 15 minutes');
+  await page.screenshot({ path: `${SHOTS}7-home-learner.png` });
 });
 
 await check('still signed in after reopening the app', async () => {
@@ -110,9 +140,15 @@ await check('test account signs in by username and sees its child', async () => 
   await tap('Sign in');
   await text('Muraho, john!');
   await text('1 child profile(s)');
-  await page.screenshot({ path: `${SHOTS}6-home-parent.png` });
+  await page.screenshot({ path: `${SHOTS}8-home-parent.png` });
   await tap('Sign out');
   await text('I already have an account');
+});
+
+await check('credits name the voice and its licence', async () => {
+  await page.goto(`${BASE}/credits`);
+  await text('Digital Umuganda');
+  await text('CC BY-SA 4.0');
 });
 
 await browser.close();

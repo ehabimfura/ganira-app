@@ -2,7 +2,7 @@ import { Router, type Response } from "express";
 import type { ResultSetHeader, RowDataPacket } from "mysql2/promise";
 import { z } from "zod";
 import type { Database } from "../db.js";
-import { learnerOnboarding } from "../onboarding.js";
+import { ADULT_PATH, learnerOnboarding } from "../onboarding.js";
 import { isAdult } from "./age.js";
 import { hashSecret, MIN_PASSWORD_LENGTH, verifyAgainstDummy, verifySecret } from "./passwords.js";
 import { createRateLimiter } from "./rate-limit.js";
@@ -87,19 +87,9 @@ export function authRoutes(db: Database) {
       accountId = account.insertId;
       if (input.kind === "LEARNER") {
         const [learner] = await conn.query<ResultSetHeader>(
-          `INSERT INTO learners
-             (account_id, kind, nickname, avatar, native_language, path, learner_role, level, daily_goal_minutes)
-           VALUES (?, 'SELF', ?, ?, ?, ?, ?, ?, ?)`,
-          [
-            accountId,
-            input.nickname,
-            input.avatar,
-            input.nativeLanguage,
-            input.path,
-            input.learnerRole,
-            input.level,
-            input.dailyGoalMinutes,
-          ],
+          `INSERT INTO learners (account_id, kind, nickname, avatar, path, level, daily_goal_minutes)
+           VALUES (?, 'SELF', ?, ?, ?, ?, ?)`,
+          [accountId, input.nickname, input.avatar, ADULT_PATH, input.level, input.dailyGoalMinutes],
         );
         selfLearnerId = learner.insertId;
       }

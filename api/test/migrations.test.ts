@@ -25,7 +25,7 @@ afterAll(async () => {
 describe("migrations", () => {
   test("first run applies every migration and creates the account tables", async () => {
     const applied = await runMigrations(settings);
-    expect(applied).toEqual(["001_accounts.sql", "002_onboarding.sql"]);
+    expect(applied).toEqual(["001_accounts.sql", "002_onboarding.sql", "003_adult_path.sql"]);
 
     const [rows] = await conn.query<mysql.RowDataPacket[]>("SHOW TABLES");
     const names = rows.map((row) => Object.values(row)[0]);

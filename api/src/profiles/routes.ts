@@ -5,7 +5,7 @@ import { hashSecret, verifySecret } from "../auth/passwords.js";
 import { createRateLimiter } from "../auth/rate-limit.js";
 import { requireSession, type SessionInfo } from "../auth/session.js";
 import type { Database } from "../db.js";
-import { dailyGoal, level } from "../onboarding.js";
+import { CHILD_PATH, dailyGoal, level } from "../onboarding.js";
 
 export const MAX_CHILDREN = 6;
 const WINDOW_MS = 15 * 60 * 1000;
@@ -83,9 +83,10 @@ export function profileRoutes(db: Database) {
       const [child] = await conn.query<ResultSetHeader>(
         `INSERT INTO learners
            (account_id, kind, path, level, daily_goal_minutes, nickname, avatar, age_range, pin_hash)
-         VALUES (?, 'CHILD', 'FAMILY', ?, ?, ?, ?, ?, ?)`,
+         VALUES (?, 'CHILD', ?, ?, ?, ?, ?, ?, ?)`,
         [
           session.accountId,
+          CHILD_PATH,
           input.level,
           input.dailyGoalMinutes,
           input.nickname,

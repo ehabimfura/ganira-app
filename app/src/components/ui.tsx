@@ -64,6 +64,32 @@ export function Button({
   );
 }
 
+// One tappable option in a list of answers, e.g. a level or a daily goal.
+export function Choice({
+  label,
+  hint,
+  selected,
+  onPress,
+}: {
+  label: string;
+  hint?: string;
+  selected: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="radio"
+      accessibilityState={{ checked: selected }}
+      accessibilityLabel={label}
+      onPress={onPress}
+      style={({ pressed }) => [styles.choice, selected && styles.choiceSelected, pressed && styles.pressed]}
+    >
+      <Text style={styles.choiceLabel}>{label}</Text>
+      {hint ? <Text style={styles.choiceHint}>{hint}</Text> : null}
+    </Pressable>
+  );
+}
+
 export function Field({ label, ...input }: TextInputProps & { label: string }) {
   return (
     <View style={styles.field}>
@@ -92,6 +118,16 @@ const styles = StyleSheet.create({
   disabled: { opacity: 0.5 },
   pressed: { opacity: 0.8 },
   buttonText: { fontSize: font.body, fontWeight: '600' },
+  choice: {
+    borderWidth: 2,
+    borderColor: colors.border,
+    borderRadius: radius,
+    padding: space.md,
+    gap: space.xs,
+  },
+  choiceSelected: { borderColor: colors.primary, backgroundColor: colors.surface },
+  choiceLabel: { fontSize: font.body, fontWeight: '600', color: colors.text },
+  choiceHint: { fontSize: font.label, color: colors.muted },
   field: { gap: space.xs },
   label: { fontSize: font.label, color: colors.text, fontWeight: '600' },
   input: {

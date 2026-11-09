@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Body, Button, Screen, Title } from '@/components/ui';
@@ -26,6 +27,7 @@ export default function Home() {
           : `Learner account · daily goal ${active?.dailyGoalMinutes ?? '-'} minutes`}
       </Body>
       <View style={styles.flex} />
+      <Button label="Credits" variant="secondary" onPress={() => router.push('/credits')} />
       <Button
         label="Sign out"
         variant="secondary"

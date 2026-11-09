@@ -12,6 +12,9 @@ export default function Welcome() {
       </View>
       <Button label="Get started" onPress={() => router.push('/who')} />
       <Button label="I already have an account" variant="secondary" onPress={() => router.push('/sign-in')} />
+      <Text style={styles.credits} onPress={() => router.push('/credits')} accessibilityRole="link">
+        Credits
+      </Text>
     </Screen>
   );
 }
@@ -19,4 +22,5 @@ export default function Welcome() {
 const styles = StyleSheet.create({
   hero: { flex: 1, justifyContent: 'center', gap: space.sm },
   greeting: { fontSize: font.hero, fontWeight: '800', color: colors.primary },
+  credits: { textAlign: 'center', color: colors.muted, fontSize: font.label, padding: space.sm },
 });

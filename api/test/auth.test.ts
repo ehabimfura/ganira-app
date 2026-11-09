@@ -56,7 +56,7 @@ describe("sign-up", () => {
         kind: "SELF",
         nickname: "Ann",
         avatar: "lion",
-        path: "LIVING_IN_RWANDA",
+        path: "ADULT",
         level: "NEW",
         dailyGoalMinutes: 10,
         hasPin: false,
@@ -106,10 +106,15 @@ describe("sign-up", () => {
     expect((await signupParent("u3@example.com", { username: "a".repeat(21) })).status).toBe(400);
   });
 
-  test("a learner must answer the onboarding questions, with allowed values", async () => {
-    expect((await signupLearner("noanswers@example.com", { path: undefined })).status).toBe(400);
+  test("a learner must give level and daily goal, with allowed values", async () => {
+    expect((await signupLearner("nolevel@example.com", { level: undefined })).status).toBe(400);
+    expect((await signupLearner("badlevel@example.com", { level: "EXPERT" })).status).toBe(400);
     expect((await signupLearner("badgoal@example.com", { dailyGoalMinutes: 7 })).status).toBe(400);
-    expect((await signupLearner("badrole@example.com", { learnerRole: "PILOT" })).status).toBe(400);
+  });
+
+  test("an adult learner always gets the Everyday Kinyarwanda path, whatever is sent", async () => {
+    const res = await signupLearner("anywhere@example.com", { path: "FAMILY" });
+    expect((await me(res.body.token)).body.profiles[0].path).toBe("ADULT");
   });
 
   test("bad input gets a 400: short password, missing nickname, broken JSON", async () => {

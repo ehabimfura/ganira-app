@@ -1,28 +1,21 @@
-import { useLocalSearchParams } from 'expo-router';
+import { Redirect, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Body, Button, ErrorText, Field, Title } from '@/components/ui';
 import { messageFor } from '@/lib/api';
 import { AVATARS } from '@/lib/avatars';
+import { useOnboardingDraft } from '@/lib/onboarding-draft';
 import { useSession } from '@/lib/session';
 import { colors, radius, space } from '@/theme';
 
 const USERNAME_RULE = /^[a-z0-9_]{3,20}$/;
 const MIN_PASSWORD_LENGTH = 8;
 
-// TODO(step B): replace with the answers from the onboarding questions.
-const PLACEHOLDER_ONBOARDING = {
-  nativeLanguage: 'English',
-  path: 'LIVING_IN_RWANDA',
-  learnerRole: 'TOURIST',
-  level: 'NEW',
-  dailyGoalMinutes: 10,
-};
-
 export default function CreateAccount() {
   const params = useLocalSearchParams<{ for: string; birthYear: string }>();
   const isParent = params.for === 'child';
   const { signUp } = useSession();
+  const { draft, clear } = useOnboardingDraft();
 
   const [nickname, setNickname] = useState('');
   const [avatar, setAvatar] = useState<string>(AVATARS[0].id);
@@ -53,18 +46,31 @@ export default function CreateAccount() {
       email: email.trim(),
       username: username.trim().toLowerCase(),
       password,
-      birthYear: Number(params.birthYear),
+      birthYear: isParent ? Number(params.birthYear) : draft.birthYear,
     };
     const body = isParent
       ? { ...account, kind: 'PARENT' }
-      : { ...account, kind: 'LEARNER', nickname: nickname.trim(), avatar, ...PLACEHOLDER_ONBOARDING };
+      : {
+          ...account,
+          kind: 'LEARNER',
+          nickname: nickname.trim(),
+          avatar,
+          level: draft.level,
+          dailyGoalMinutes: draft.dailyGoalMinutes,
+        };
     try {
       // On success the session changes and the navigator moves to Home by itself.
       await signUp(body);
+      clear();
     } catch (e) {
       setError(messageFor(e));
       setBusy(false);
     }
+  }
+
+  // The answers live in memory only; if the app was closed, start the questions again.
+  if (!isParent && (!draft.birthYear || !draft.level || !draft.dailyGoalMinutes)) {
+    return <Redirect href="/who" />;
   }
 
   return (
