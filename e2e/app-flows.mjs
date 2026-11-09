@@ -20,6 +20,10 @@ async function check(name, fn) {
     results.push(`PASS ${name}`);
   } catch (e) {
     results.push(`FAIL ${name}: ${e.message.split('\n')[0]}`);
+    const slug = name.replace(/[^a-z0-9]+/gi, '-').slice(0, 40);
+    await page.screenshot({ path: `${SHOTS}FAIL-${slug}.png` }).catch(() => {});
+    const body = await page.locator('body').innerText().catch(() => '');
+    results.push(`     screen text: ${body.replace(/\s+/g, ' ').slice(0, 200)}`);
   }
 }
 
@@ -27,8 +31,9 @@ const browser = await chromium.launch().catch(() => chromium.launch({ channel: '
 const page = await (await browser.newContext({ viewport: { width: 390, height: 844 } })).newPage();
 const errors = [];
 page.on('pageerror', (e) => errors.push(e.message));
-const text = (t) => page.getByText(t, { exact: false }).first().waitFor({ timeout: 8000 });
-const tap = (name) => page.getByRole('button', { name, exact: true }).click();
+// Only visible matches count: screens further back in the stack stay in the page, hidden.
+const text = (t) => page.getByText(t, { exact: false }).filter({ visible: true }).first().waitFor({ timeout: 8000 });
+const tap = (name) => page.getByRole('button', { name, exact: true }).filter({ visible: true }).first().click();
 const fill = (label, value) => page.getByRole('textbox', { name: label }).fill(value);
 
 await check('welcome screen shows on first launch', async () => {
@@ -76,15 +81,13 @@ await check('learner answers level and daily goal', async () => {
   await tap('Continue');
 });
 
-await check('first lesson: listen, say it, then continue (no skip)', async () => {
+await check('first lesson: must listen before continuing; no "I said it" button', async () => {
   await text('Your first word');
-  if (await page.getByRole('button', { name: 'I said it' }).count()) throw new Error('"I said it" shown before listening');
-  if (await page.getByRole('button', { name: 'Continue' }).count()) throw new Error('Continue shown before speaking');
+  if (await page.getByRole('button', { name: 'Continue' }).count()) throw new Error('Continue shown before listening');
   await tap('🔊 Listen');
   await text('Now say it out loud!');
+  if (await page.getByRole('button', { name: 'I said it' }).count()) throw new Error('"I said it" is still there');
   await page.screenshot({ path: `${SHOTS}5-first-lesson.png` });
-  await tap('I said it');
-  await page.getByLabel('Done').waitFor({ timeout: 8000 });
   await tap('Continue');
   await text('Save your progress');
 });
@@ -101,7 +104,8 @@ await check('learner sign-up: short password is caught, then account is created'
   await fill('Password', 'correct horse');
   await tap('Create account');
   await text('Muraho, Amina!');
-  await text('daily goal 15 minutes');
+  await text('Daily goal: 15 minutes');
+  await page.getByRole('button', { name: 'Lesson 1: Muraho' }).waitFor();
   await page.screenshot({ path: `${SHOTS}7-home-learner.png` });
 });
 
@@ -135,14 +139,80 @@ await check('wrong password gets a clear message', async () => {
   await text('email, username or password is not right');
 });
 
-await check('test account signs in by username and sees its child', async () => {
+await check('test account signs in by username and sees its child in the picker', async () => {
   await fill('Password', env.TEST_ACCOUNT_PASSWORD);
   await tap('Sign in');
-  await text('Muraho, john!');
-  await text('1 child profile(s)');
-  await page.screenshot({ path: `${SHOTS}8-home-parent.png` });
+  await text('Who is learning?');
+  await page.getByRole('button', { name: 'Keza' }).waitFor();
   await tap('Sign out');
   await text('I already have an account');
+});
+
+const PARENT_PASSWORD = 'parent password';
+
+await check('new parent is asked to add a child; consent is required', async () => {
+  await page.goto(`${BASE}/birth-year?for=child`);
+  await fill('Birth year', '1984');
+  await page.keyboard.press('Enter');
+  await fill('Email', `mama${stamp}@example.com`);
+  await fill('Username', `mama_${stamp}`);
+  await fill('Password', PARENT_PASSWORD);
+  await tap('Create account');
+  await text('Add your child');
+  await fill("Child's nickname", 'Ineza');
+  await page.getByRole('radio', { name: '7-9' }).click();
+  await fill('PIN (optional, 4 numbers)', '2468');
+  await tap('Add child');
+  await text('Please confirm you are the parent or guardian');
+  await page.getByRole('checkbox', { name: "I am this child's parent or guardian" }).click();
+  await page.screenshot({ path: `${SHOTS}8-add-child.png`, fullPage: true });
+  await tap('Add child');
+  await text('Who is learning?');
+  await page.screenshot({ path: `${SHOTS}9-picker.png` });
+});
+
+await check('a PIN-locked child needs the right PIN', async () => {
+  await tap('Ineza');
+  await text("Ineza's PIN");
+  await fill('PIN', '0000');
+  await tap('Open');
+  await text("That PIN isn't right");
+  await fill('PIN', '2468');
+  await tap('Open');
+  await text('Muraho, Ineza!');
+  await text('Daily goal: 5 minutes');
+  await page.screenshot({ path: `${SHOTS}10-child-home.png` });
+});
+
+await check('a child has no sign-out, and Lesson 1 opens and returns', async () => {
+  if (await page.getByRole('button', { name: 'Sign out' }).count()) throw new Error('Sign out shown in child mode');
+  await tap('Lesson 1: Muraho');
+  await text('Your first word');
+  await tap('🔊 Listen');
+  await tap('Continue');
+  await text('Muraho, Ineza!');
+});
+
+await check("only the parent's password leaves the child's profile", async () => {
+  await tap('Parent');
+  await fill('Parent password', 'wrong password');
+  await tap('Continue');
+  await text("That password isn't right");
+  await fill('Parent password', PARENT_PASSWORD);
+  await tap('Continue');
+  await text('Who is learning?');
+});
+
+await check('a child without a PIN opens with one tap', async () => {
+  await tap('+ Add child');
+  await text('Add another child');
+  await fill("Child's nickname", 'Ganza');
+  await page.getByRole('radio', { name: '4-6' }).click();
+  await page.getByRole('checkbox', { name: "I am this child's parent or guardian" }).click();
+  await tap('Add child');
+  await text('Who is learning?');
+  await tap('Ganza');
+  await text('Muraho, Ganza!');
 });
 
 await check('credits name the voice and its licence', async () => {

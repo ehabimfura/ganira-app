@@ -4,37 +4,33 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Body, Button, Screen, Title } from '@/components/ui';
+import { useSession } from '@/lib/session';
 import { colors, font, space } from '@/theme';
 
-type Step = 'listen' | 'say' | 'done';
-
-// Speaking in the first seconds: hear "Muraho" in the lesson voice, say it, move on.
-// There is no skip. Until the speech check arrives, the learner taps "I said it".
+// Speaking in the first seconds: hear "Muraho" in the lesson voice, then say it.
+// There is no skip, and no "I said it" button: the speech check (Nov 12) will decide
+// when the word was said, and only then play the chime and success vibration.
 export default function FirstLesson() {
+  const { status } = useSession();
   const voice = useAudioPlayer(require('../../assets/audio/muraho.wav'));
-  const chime = useAudioPlayer(require('../../assets/audio/chime.wav'));
-  const [step, setStep] = useState<Step>('listen');
-
-  const play = (player: typeof voice) => {
-    // A missing speaker or a blocked browser must never stop the lesson.
-    try {
-      player.seekTo(0);
-      player.play();
-    } catch (error) {
-      console.warn('Could not play sound', error);
-    }
-  };
+  const [heard, setHeard] = useState(false);
 
   const listen = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-    play(voice);
-    if (step === 'listen') setStep('say');
+    // A missing speaker or a blocked browser must never stop the lesson.
+    try {
+      voice.seekTo(0);
+      voice.play();
+    } catch (error) {
+      console.warn('Could not play sound', error);
+    }
+    setHeard(true);
   };
 
-  const saidIt = () => {
-    play(chime);
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-    setStep('done');
+  // New learners go on to save their progress; signed-in learners return to their path.
+  const next = () => {
+    if (status === 'signedIn') router.back();
+    else router.push({ pathname: '/create-account', params: { for: 'me' } });
   };
 
   return (
@@ -43,22 +39,16 @@ export default function FirstLesson() {
       <View style={styles.card}>
         <Text style={styles.word}>Muraho</Text>
         <Text style={styles.meaning}>Hello</Text>
-        {step === 'done' && (
-          <Text style={styles.tick} accessibilityLabel="Done">
-            ✓
-          </Text>
-        )}
       </View>
 
       <Button label="🔊 Listen" variant="secondary" onPress={listen} />
 
-      {step === 'say' && (
+      {heard && (
         <>
           <Body>Now say it out loud!</Body>
-          <Button label="I said it" onPress={saidIt} />
+          <Button label="Continue" onPress={next} />
         </>
       )}
-      {step === 'done' && <Button label="Continue" onPress={() => router.push({ pathname: '/create-account', params: { for: 'me' } })} />}
     </Screen>
   );
 }
@@ -72,5 +62,4 @@ const styles = StyleSheet.create({
   },
   word: { fontSize: font.hero, fontWeight: '800', color: colors.text },
   meaning: { fontSize: font.body, color: colors.muted },
-  tick: { fontSize: font.hero, color: colors.primary },
 });

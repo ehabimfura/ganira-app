@@ -36,6 +36,11 @@ const MESSAGES: Record<string, string> = {
   UNDER_AGE: 'Only adults aged 18 or over can create an account.',
   INVALID_INPUT: 'Please check the details you entered.',
   NOT_SIGNED_IN: 'Please sign in again.',
+  WRONG_PIN: "That PIN isn't right.",
+  WRONG_PASSWORD: "That password isn't right.",
+  TOO_MANY_PROFILES: 'You can have up to 6 child profiles.',
+  PARENT_MODE_REQUIRED: 'Only the parent can do this.',
+  PROFILE_NOT_FOUND: 'That profile was not found.',
   NETWORK: "Can't reach Ganira. Check your internet connection.",
   NOT_CONFIGURED: 'The app is missing its server address (EXPO_PUBLIC_API_URL).',
 };

@@ -1,5 +1,16 @@
 import type { ReactNode } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View, type TextInputProps } from 'react-native';
+import {
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+  type TextInputProps,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, font, radius, space } from '@/theme';
 
@@ -8,6 +19,34 @@ export function Screen({ children }: { children: ReactNode }) {
     <SafeAreaView style={styles.screen} edges={['bottom', 'left', 'right']}>
       <View style={styles.inner}>{children}</View>
     </SafeAreaView>
+  );
+}
+
+// A screen with text fields: scrolls, and moves up out of the keyboard's way.
+export function FormScreen({ children }: { children: ReactNode }) {
+  return (
+    <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <ScrollView contentContainerStyle={styles.form} keyboardShouldPersistTaps="handled">
+        {children}
+      </ScrollView>
+    </KeyboardAvoidingView>
+  );
+}
+
+export function Checkbox({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <Pressable
+      accessibilityRole="checkbox"
+      accessibilityState={{ checked }}
+      accessibilityLabel={label}
+      onPress={() => onChange(!checked)}
+      style={styles.checkRow}
+    >
+      <View style={[styles.checkBox, checked && styles.checkBoxOn]}>
+        {checked ? <Text style={styles.checkMark}>✓</Text> : null}
+      </View>
+      <Text style={styles.checkLabel}>{label}</Text>
+    </Pressable>
   );
 }
 
@@ -109,6 +148,20 @@ export function Field({ label, ...input }: TextInputProps & { label: string }) {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
   inner: { flex: 1, padding: space.lg, gap: space.md },
+  form: { padding: space.lg, gap: space.md },
+  checkRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  checkBox: {
+    width: 26,
+    height: 26,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkBoxOn: { backgroundColor: colors.primary, borderColor: colors.primary },
+  checkMark: { color: colors.primaryText, fontWeight: '800' },
+  checkLabel: { flex: 1, fontSize: font.body, color: colors.text },
   title: { fontSize: font.title, fontWeight: '700', color: colors.text },
   body: { fontSize: font.body, color: colors.muted, lineHeight: 22 },
   error: { fontSize: font.label, color: colors.error },

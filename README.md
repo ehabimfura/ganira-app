@@ -11,7 +11,7 @@ It is built for diaspora families and for foreigners living in Rwanda.
 | `api/` | Node.js API (Express 5, TypeScript, mysql2) | Sprint 0: `/health` |
 | `speech/` | Python speech-recognition service | Not started (Sprint 3) |
 | `docs/` | Pointers to the SRS and UML diagrams | Done |
-| `e2e/` | Browser click-through tests of the app screens | Steps A and B |
+| `e2e/` | Browser click-through tests of the app screens | Steps A, B and C (18 checks) |
 | `tools/voice/` | Makes lesson clips in Ganira's voice for approval | Voice B |
 
 ## Local development

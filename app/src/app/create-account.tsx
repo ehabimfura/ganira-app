@@ -1,12 +1,11 @@
 import { Redirect, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Body, Button, ErrorText, Field, Title } from '@/components/ui';
+import { AvatarPicker } from '@/components/avatar-picker';
+import { Body, Button, ErrorText, Field, FormScreen, Title } from '@/components/ui';
 import { messageFor } from '@/lib/api';
 import { AVATARS } from '@/lib/avatars';
 import { useOnboardingDraft } from '@/lib/onboarding-draft';
 import { useSession } from '@/lib/session';
-import { colors, radius, space } from '@/theme';
 
 const USERNAME_RULE = /^[a-z0-9_]{3,20}$/;
 const MIN_PASSWORD_LENGTH = 8;
@@ -74,8 +73,7 @@ export default function CreateAccount() {
   }
 
   return (
-    <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+    <FormScreen>
         <Title>{isParent ? 'Create your parent account' : 'Save your progress'}</Title>
         <Body>
           {isParent
@@ -86,21 +84,7 @@ export default function CreateAccount() {
         {!isParent && (
           <>
             <Field label="Nickname" value={nickname} onChangeText={setNickname} autoCapitalize="words" maxLength={40} />
-            <Text style={styles.label}>Avatar</Text>
-            <View style={styles.avatars}>
-              {AVATARS.map((a) => (
-                <Pressable
-                  key={a.id}
-                  accessibilityRole="button"
-                  accessibilityLabel={a.id}
-                  accessibilityState={{ selected: avatar === a.id }}
-                  onPress={() => setAvatar(a.id)}
-                  style={[styles.avatar, avatar === a.id && styles.avatarSelected]}
-                >
-                  <Text style={styles.emoji}>{a.emoji}</Text>
-                </Pressable>
-              ))}
-            </View>
+            <AvatarPicker value={avatar} onChange={setAvatar} />
           </>
         )}
 
@@ -116,26 +100,6 @@ export default function CreateAccount() {
         />
         <ErrorText message={error} />
         <Button label="Create account" onPress={submit} busy={busy} />
-      </ScrollView>
-    </KeyboardAvoidingView>
+    </FormScreen>
   );
 }
-
-const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: colors.background },
-  content: { padding: space.lg, gap: space.md },
-  label: { fontSize: 14, fontWeight: '600', color: colors.text },
-  avatars: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
-  avatar: {
-    width: 56,
-    height: 56,
-    borderRadius: radius,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.surface,
-    borderWidth: 2,
-    borderColor: 'transparent',
-  },
-  avatarSelected: { borderColor: colors.primary },
-  emoji: { fontSize: 30 },
-});

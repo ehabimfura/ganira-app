@@ -2,12 +2,7 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { Button, Choice, Screen, Title } from '@/components/ui';
 import { useOnboardingDraft, type Level } from '@/lib/onboarding-draft';
-
-const LEVEL_OPTIONS: { value: Level; label: string }[] = [
-  { value: 'NEW', label: 'New to Kinyarwanda' },
-  { value: 'FEW_WORDS', label: 'I know a few words' },
-  { value: 'SHORT_CHAT', label: 'I can hold a short chat' },
-];
+import { LEVEL_OPTIONS } from '@/lib/onboarding-options';
 
 export default function LevelScreen() {
   const { draft, update } = useOnboardingDraft();

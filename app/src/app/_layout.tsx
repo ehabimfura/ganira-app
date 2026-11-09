@@ -23,6 +23,8 @@ function RootStack() {
     <Stack screenOptions={{ headerTintColor: colors.primary, headerTitle: '', headerShadowVisible: false }}>
       <Stack.Screen name="index" options={{ headerShown: false }} />
       <Stack.Screen name="credits" />
+      {/* The first lesson is part of sign-up and also Lesson 1 on the path. */}
+      <Stack.Screen name="first-lesson" />
       {/* Signed-out screens disappear from history as soon as someone signs in, and the reverse. */}
       <Stack.Protected guard={!signedIn}>
         <Stack.Screen name="welcome" options={{ headerShown: false }} />
@@ -30,13 +32,15 @@ function RootStack() {
         <Stack.Screen name="birth-year" />
         <Stack.Screen name="level" />
         <Stack.Screen name="daily-goal" />
-        <Stack.Screen name="first-lesson" />
         <Stack.Screen name="under-age" />
         <Stack.Screen name="create-account" />
         <Stack.Screen name="sign-in" />
       </Stack.Protected>
       <Stack.Protected guard={signedIn}>
         <Stack.Screen name="home" options={{ headerShown: false }} />
+        <Stack.Screen name="add-child" />
+        <Stack.Screen name="pin" />
+        <Stack.Screen name="parent-unlock" />
       </Stack.Protected>
     </Stack>
   );
