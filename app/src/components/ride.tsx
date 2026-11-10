@@ -6,9 +6,20 @@ import type { GreetingOption, Line, Turn } from '@/content/module1';
 import { useClipPlayer } from '@/lib/sounds';
 import { colors, font, radius, space } from '@/theme';
 
-// Lesson 5: the whole conversation with a motari, as a chat. The learner speaks
-// their lines; each motari answer appears (and plays) as soon as the learner moves on.
-export function Ride({ intro, turns, onFinish }: { intro: string; turns: Turn[]; onFinish: () => void }) {
+// A conversation with a motari, as a chat: the full ride in lesson 5, and short
+// exchanges at the end of lessons 2-4. The learner speaks their lines; each motari
+// answer appears (and plays) as soon as the learner moves on.
+export function Ride({
+  intro,
+  turns,
+  onFinish,
+  finishLabel = '🏍️ Finish',
+}: {
+  intro?: string;
+  turns: Turn[];
+  onFinish: () => void;
+  finishLabel?: string;
+}) {
   const play = useClipPlayer();
   const scroll = useRef<ScrollViewInstance>(null);
   const [position, setPosition] = useState(0);
@@ -45,7 +56,7 @@ export function Ride({ intro, turns, onFinish }: { intro: string; turns: Turn[];
         onContentSizeChange={() => scroll.current?.scrollToEnd({ animated: true })}
         onLayout={() => scroll.current?.scrollToEnd({ animated: true })}
       >
-        <Body>{intro}</Body>
+        {intro ? <Body>{intro}</Body> : null}
         {turns.slice(0, position).map((turn, i) => {
           const line = lineOf(turn, greeting);
           return line ? <Bubble key={i} line={line} mine={turn.speaker === 'me'} onPlay={play} /> : null;
@@ -53,7 +64,7 @@ export function Ride({ intro, turns, onFinish }: { intro: string; turns: Turn[];
       </ScrollView>
 
       {finished ? (
-        <Button label="🏍️ Finish" onPress={onFinish} />
+        <Button label={finishLabel} onPress={onFinish} />
       ) : 'choose' in current ? (
         <GreetingTurn
           options={current.choose}

@@ -56,14 +56,20 @@ async function speak() {
   await page.getByRole('button', { name: '🎙️ Try again', exact: true }).filter({ visible: true }).first().waitFor({ timeout: 15000 });
 }
 
-// Lessons 1-4: listen to each phrase, say it, move on, and finish.
-async function finishStepLesson() {
-  for (let i = 0; i < 60; i++) {
+const answerShown = async () => (await page.getByRole('radio').filter({ visible: true }).count()) > 0;
+
+// Lessons 1-4: start, then learn, listen, recall and talk through every step to the end.
+// With `stopAt`, stops as soon as that text is on screen instead.
+async function finishStepLesson(stopAt) {
+  for (let i = 0; i < 150; i++) {
+    if (stopAt && (await page.getByText(stopAt, { exact: false }).filter({ visible: true }).count())) return;
     if (await shown('Back to lessons')) return;
-    if (await shown('Finish')) await tap('Finish');
+    if (await shown('Start')) await tap('Start');
+    else if (await shown('Finish')) await tap('Finish');
     else if (await shown('Next')) await tap('Next');
     else if (await shown('🎙️ Speak')) await speak();
     else if (await shown('🔊 Listen')) await tap('🔊 Listen');
+    else if (await answerShown()) await page.getByRole('radio').filter({ visible: true }).first().click();
     else await page.waitForTimeout(200);
   }
   throw new Error('the lesson never reached its end');
@@ -222,8 +228,12 @@ await check('a PIN-locked child needs the right PIN', async () => {
 
 await check('a child has no sign-out; finishing lesson 1 opens lesson 2 only', async () => {
   if (await page.getByRole('button', { name: 'Sign out' }).count()) throw new Error('Sign out shown in child mode');
-  if (!(await isLocked('Lesson 2: Yes and no'))) throw new Error('lesson 2 open before lesson 1 was done');
+  if (!(await isLocked('Lesson 2: Calling a moto'))) throw new Error('lesson 2 open before lesson 1 was done');
   await tap('Lesson 1: Greetings');
+  await text('By the end you can:');
+  await text('Greet anyone at any time of day.');
+  await page.screenshot({ path: `${SHOTS}11a-lesson-goal.png` });
+  await tap('Start');
   await text('1. Greetings');
   await text('Muraho');
   if (await shown('Next')) throw new Error('Next shown before listening');
@@ -233,23 +243,41 @@ await check('a child has no sign-out; finishing lesson 1 opens lesson 2 only', a
   await speak();
   await page.getByLabel('Heard: 1 of 1 words').filter({ visible: true }).first().waitFor({ timeout: 5000 });
   await page.screenshot({ path: `${SHOTS}11-lesson-step.png` });
+
+  // Listen: a wrong pick shows the right meaning too.
+  await finishStepLesson('What does it mean?');
+  await page.getByRole('radio', { name: 'Thank you' }).click();
+  await page.getByRole('radio', { name: '✗ Thank you' }).waitFor();
+  await page.getByRole('radio', { name: '✓ Good morning' }).waitFor();
+  await page.screenshot({ path: `${SHOTS}11b-listen.png` });
+  await tap('Next');
+
+  // Recall: only the English shows until the learner has tried.
+  await text('How do you say');
+  await text('“Hello”');
+  if (await page.getByText('Muraho', { exact: true }).filter({ visible: true }).count()) throw new Error('answer shown before trying');
+  await page.screenshot({ path: `${SHOTS}11c-recall.png` });
+  await speak();
+  await page.getByLabel('Heard: 1 of 1 words').filter({ visible: true }).first().waitFor({ timeout: 5000 });
   await finishStepLesson();
   await text('Lesson 1 complete');
+  await text('Now you can:');
   await page.screenshot({ path: `${SHOTS}12-lesson-done.png` });
   await tap('Back to lessons');
   await text('Muraho, Ineza!');
-  if (await isLocked('Lesson 2: Yes and no')) throw new Error('lesson 2 still locked');
+  if (await isLocked('Lesson 2: Calling a moto')) throw new Error('lesson 2 still locked');
   if (!(await isLocked('Lesson 3: Where to?'))) throw new Error('lesson 3 open too early');
 });
 
 await check('lessons 2-4 teach the motari\'s words, then the ride ends with "vayo tugende"', async () => {
-  for (const name of ['Lesson 2: Yes and no', 'Lesson 3: Where to?', 'Lesson 4: How much?']) {
+  for (const name of ['Lesson 2: Calling a moto', 'Lesson 3: Where to?', 'Lesson 4: How much?']) {
     await tap(name);
     await finishStepLesson();
     await tap('Back to lessons');
     await text('Muraho, Ineza!');
   }
   await tap('Lesson 5: The ride');
+  await tap('Start');
   await text('Greet the motari');
   await page.getByRole('radio', { name: 'Mwaramutse' }).click();
   await speak();

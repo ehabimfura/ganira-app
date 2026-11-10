@@ -1,0 +1,20 @@
+# Module 1 backward build-up: long phrases taught from the end (voice B).
+# Three tries each (different punctuation); the native speaker keeps the best one.
+stade_1|Stade.
+stade_2|Stade
+stade_3|stade,
+kuri_stade_1|kuri Stade.
+kuri_stade_2|Kuri Stade
+kuri_stade_3|kuri stade,
+i_remera_kuri_stade_1|i Remera kuri Stade.
+i_remera_kuri_stade_2|I Remera kuri Stade
+i_remera_kuri_stade_3|i Remera, kuri Stade.
+ni_angahe_1|ni angahe?
+ni_angahe_2|Ni angahe?
+ni_angahe_3|nangahe?
+magana_inani_1|magana inani.
+magana_inani_2|Magana inani
+magana_inani_3|magana inani,
+ndaguha_magana_inani_1|ndaguha magana inani.
+ndaguha_magana_inani_2|Ndaguha magana inani
+ndaguha_magana_inani_3|ndaguha magana inani,

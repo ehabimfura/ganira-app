@@ -3,6 +3,14 @@ import type { AudioSource } from 'expo-audio';
 // Module 1, "Taking a moto in Kigali". Lessons 1-4 each teach one step of the ride;
 // lesson 5 is the ride itself. The ids must match api/src/lessons/catalog.ts.
 //
+// Every lesson follows the same research-based shape (see docs/LESSON-DESIGN.md):
+//   goal   - what the learner will be able to do (a CEFR-style "can do")
+//   learn  - at most 4 new things: hear it, say it. Long phrases are built backward from the end.
+//   listen - the motari speaks; the learner picks what it means
+//   recall - only the English shows; the learner says it from memory (retrieval practice),
+//            including 1-2 phrases from earlier lessons (spaced review)
+//   talk   - a short exchange with the motari using the lesson's phrases
+//
 // Learner lines are in voice B, each clip approved by a native speaker.
 // The motari's lines are recorded by a native speaker (tools/voice/module1-motari.txt);
 // until a recording is added, that line shows as text with no sound.
@@ -13,11 +21,8 @@ export interface Line {
   audio?: AudioSource;
 }
 
-// "say": the learner hears the line, then says it. "hear": the motari's words, to understand.
-export type Step = { kind: 'say'; line: Line } | { kind: 'hear'; line: Line };
-
-// A turn in the ride. In a "choose" turn the learner picks a greeting, and the
-// "greetingReply" turn is the motari answering with that same greeting.
+// In a "choose" turn the learner picks a greeting, and the "greetingReply"
+// turn is the motari answering with that same greeting.
 export interface GreetingOption {
   line: Line;
   reply: Line;
@@ -28,9 +33,15 @@ export type Turn =
   | { speaker: 'me'; choose: GreetingOption[] }
   | { speaker: 'motari'; greetingReply: true };
 
+export type Step =
+  | { kind: 'learn'; line: Line }
+  | { kind: 'listen'; line: Line; wrongMeanings: string[] }
+  | { kind: 'recall'; line: Line }
+  | { kind: 'talk'; turns: Turn[] };
+
 export type Lesson =
-  | { id: string; title: string; kind: 'steps'; steps: Step[] }
-  | { id: string; title: string; kind: 'ride'; intro: string; turns: Turn[] };
+  | { id: string; title: string; goal: string; kind: 'steps'; steps: Step[] }
+  | { id: string; title: string; goal: string; kind: 'ride'; intro: string; turns: Turn[] };
 
 const audio = {
   muraho: require('../../assets/audio/muraho.wav'),
@@ -64,6 +75,17 @@ const me = {
   offer: { text: 'Oya, ndaguha magana inani.', meaning: "No, I'll give you 800 francs.", audio: audio.ndaguha },
 } satisfies Record<string, Line>;
 
+// Backward build-up: the end of a long phrase first, so its natural melody is kept.
+// Their clips are waiting for the native speaker's approval (tools/voice/module1-buildup.txt).
+const part = {
+  stade: { text: 'Stade', meaning: 'the stadium' },
+  kuriStade: { text: 'kuri Stade', meaning: 'to the stadium' },
+  iRemeraKuriStade: { text: 'i Remera kuri Stade', meaning: 'to Remera, to the stadium' },
+  niAngahe: { text: 'ni angahe?', meaning: 'how much is it?' },
+  maganaInani: { text: 'magana inani', meaning: 'eight hundred' },
+  ndaguhaMaganaInani: { text: 'ndaguha magana inani', meaning: "I'll give you eight hundred" },
+} satisfies Record<string, Line>;
+
 const motari = {
   muraho: { text: 'Muraho', meaning: 'Hello' },
   mwaramutse: { text: 'Mwaramutse', meaning: 'Good morning' },
@@ -74,8 +96,12 @@ const motari = {
   letsGo: { text: 'Ntacyo, vayo tugende.', meaning: "Okay, come, let's go." },
 } satisfies Record<string, Line>;
 
-const say = (line: Line): Step => ({ kind: 'say', line });
-const hear = (line: Line): Step => ({ kind: 'hear', line });
+const learn = (line: Line): Step => ({ kind: 'learn', line });
+const recall = (line: Line): Step => ({ kind: 'recall', line });
+const listen = (line: Line, ...wrongMeanings: string[]): Step => ({ kind: 'listen', line, wrongMeanings });
+const talk = (...turns: Turn[]): Step => ({ kind: 'talk', turns });
+const say = (line: Line): Turn => ({ speaker: 'me', line });
+const hears = (line: Line): Turn => ({ speaker: 'motari', line });
 
 export const MODULE_TITLE = 'Taking a moto in Kigali';
 
@@ -83,30 +109,77 @@ export const LESSONS: Lesson[] = [
   {
     id: 'moto-1',
     title: 'Greetings',
+    goal: 'Greet anyone at any time of day.',
     kind: 'steps',
-    steps: [say(me.muraho), say(me.mwaramutse), say(me.mwiriwe), say(me.biteSe), say(me.mota)],
+    steps: [
+      learn(me.muraho),
+      learn(me.mwaramutse),
+      learn(me.mwiriwe),
+      learn(me.biteSe),
+      listen(motari.mwaramutse, 'Thank you', 'Good afternoon / evening'),
+      recall(me.muraho),
+      recall(me.mwiriwe),
+      recall(me.mwaramutse),
+    ],
   },
   {
     id: 'moto-2',
-    title: 'Yes and no',
+    title: 'Calling a moto',
+    goal: 'Call a motari and answer yes, no and thank you.',
     kind: 'steps',
-    steps: [say(me.yego), say(me.oya), say(me.murakoze), hear(motari.letsGo)],
+    steps: [
+      learn(me.mota),
+      learn(me.yego),
+      learn(me.oya),
+      learn(me.murakoze),
+      listen(motari.letsGo, 'No, thank you.', 'Yes, I know the place.'),
+      recall(me.yego),
+      recall(me.murakoze),
+      recall(me.oya),
+      recall(me.mwaramutse),
+      talk(say(me.mota), hears(motari.letsGo), say(me.murakoze)),
+    ],
   },
   {
     id: 'moto-3',
     title: 'Where to?',
+    goal: 'Tell a motari where you want to go.',
     kind: 'steps',
-    steps: [say(me.whereTo), hear(motari.knowIt)],
+    steps: [
+      learn(part.stade),
+      learn(part.kuriStade),
+      learn(part.iRemeraKuriStade),
+      learn(me.whereTo),
+      listen(motari.knowIt, "No, I don't know it.", "It's 1000 francs."),
+      recall(me.whereTo),
+      recall(me.mota),
+      recall(me.mwiriwe),
+      talk(say(me.mota), say(me.whereTo), hears(motari.knowIt)),
+    ],
   },
   {
     id: 'moto-4',
     title: 'How much?',
+    goal: 'Ask the price and offer less.',
     kind: 'steps',
-    steps: [say(me.howMuch), hear(motari.price), say(me.offer)],
+    steps: [
+      learn(part.niAngahe),
+      learn(me.howMuch),
+      learn(part.maganaInani),
+      learn(part.ndaguhaMaganaInani),
+      learn(me.offer),
+      listen(motari.price, "It's 800 francs.", 'Yes, I know the place.'),
+      recall(me.howMuch),
+      recall(me.offer),
+      recall(me.whereTo),
+      recall(me.yego),
+      talk(say(me.howMuch), hears(motari.price), say(me.offer), hears(motari.letsGo)),
+    ],
   },
   {
     id: 'moto-5',
     title: 'The ride',
+    goal: 'Take a moto to Remera stadium and agree on a price, all in Kinyarwanda.',
     kind: 'ride',
     intro: 'You need a moto to Remera stadium. Greet the motari and agree on a price.',
     turns: [
@@ -119,14 +192,14 @@ export const LESSONS: Lesson[] = [
           { line: me.biteSe, reply: motari.biteSe },
         ],
       },
-      { speaker: 'me', line: me.mota },
+      say(me.mota),
       { speaker: 'motari', greetingReply: true },
-      { speaker: 'me', line: me.whereTo },
-      { speaker: 'motari', line: motari.knowIt },
-      { speaker: 'me', line: me.howMuch },
-      { speaker: 'motari', line: motari.price },
-      { speaker: 'me', line: me.offer },
-      { speaker: 'motari', line: motari.letsGo },
+      say(me.whereTo),
+      hears(motari.knowIt),
+      say(me.howMuch),
+      hears(motari.price),
+      say(me.offer),
+      hears(motari.letsGo),
     ],
   },
 ];

@@ -11,14 +11,14 @@ import { useSuccessFeedback } from '@/lib/sounds';
 import { useSession } from '@/lib/session';
 import { colors, font } from '@/theme';
 
-type Stage = 'learning' | 'saving' | 'done' | 'failed';
+type Stage = 'goal' | 'learning' | 'saving' | 'done' | 'failed';
 
 export default function LessonScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const lesson = findLesson(id);
   const { token, refresh } = useSession();
   const success = useSuccessFeedback();
-  const [stage, setStage] = useState<Stage>('learning');
+  const [stage, setStage] = useState<Stage>('goal');
   const [error, setError] = useState<string | null>(null);
 
   if (!lesson) {
@@ -44,6 +44,21 @@ export default function LessonScreen() {
       setError(messageFor(e));
       setStage('failed');
     }
+  }
+
+  // Each lesson opens with what the learner will be able to do by the end.
+  if (stage === 'goal') {
+    return (
+      <Screen>
+        <View style={styles.center}>
+          <Text style={styles.label}>Lesson {number}</Text>
+          <Title>{lesson.title}</Title>
+          <Text style={styles.label}>By the end you can:</Text>
+          <Text style={styles.goal}>{lesson.goal}</Text>
+        </View>
+        <Button label="Start" onPress={() => setStage('learning')} />
+      </Screen>
+    );
   }
 
   if (stage === 'saving') {
@@ -73,6 +88,8 @@ export default function LessonScreen() {
           <Text style={styles.mark}>{lesson.kind === 'ride' ? '🏍️' : '✓'}</Text>
           <Title>{lesson.title}</Title>
           <Body>Lesson {number} complete</Body>
+          <Text style={styles.label}>Now you can:</Text>
+          <Text style={styles.goal}>{lesson.goal}</Text>
         </View>
         <Button label="Back to lessons" onPress={returnHome} />
       </Screen>
@@ -96,4 +113,6 @@ export default function LessonScreen() {
 const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8 },
   mark: { fontSize: font.hero * 2, color: colors.primary, fontWeight: '800' },
+  label: { fontSize: font.label, color: colors.muted, fontWeight: '600' },
+  goal: { fontSize: font.body + 2, color: colors.text, textAlign: 'center', fontWeight: '600' },
 });
