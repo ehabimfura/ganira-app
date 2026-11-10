@@ -8,7 +8,7 @@ remember and from how proven language apps work. The content lives in
 | --- | --- | --- |
 | **Goal** | "By the end you can: tell a motari where you want to go." Repeated at the end as "Now you can". | Courses aligned to CEFR "can do" goals (Duolingo rebuilt its courses this way). Task-based teaching: a meta-analysis of 52 studies found a strong positive effect (Bryfonski & McKay, 2019). |
 | **Learn** | At most 4 new things. Hear it, say it, words that were heard turn green. | Working memory holds about 4 chunks (Cowan, 2001). Speaking from the first seconds and instant speech feedback (Speak). |
-| **Backward build-up** | Long phrases are taught from the end: *Stade*, *kuri Stade*, *i Remera kuri Stade*, then the whole sentence. | Pimsleur's method; keeps each step small and the sentence's natural melody. |
+| **Backward build-up** | Long phrases are taught from the end: *Sitadi*, *kuri Sitadi*, *i Remera kuri Sitadi*, then the whole sentence. | Pimsleur's method; keeps each step small and the sentence's natural melody. |
 | **Listen** | The motari speaks; the learner picks what it means. | Learners must understand the replies they will hear, not only say their own lines. |
 | **Recall** | Only the English shows; the learner says it from memory, then sees which words were heard. Includes 1-2 phrases from earlier lessons. | Retrieval practice: 61% remembered after a week vs 40% for re-studying (Roediger & Karpicke, 2006). Pimsleur's "anticipation". Spaced review: spacing beat cramming across a 317-experiment meta-analysis (Cepeda et al., 2006). |
 | **Talk** | A short exchange with the motari using the lesson's phrases; lesson 5 is the whole ride. | Learn, Practice, Apply (Speak); the real-life task from task-based teaching. |

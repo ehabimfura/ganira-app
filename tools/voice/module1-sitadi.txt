@@ -1,0 +1,16 @@
+# "Stade" is written "Sitadi" in Kinyarwanda (no "st" cluster), so these are made again (voice B).
+sitadi_1|Sitadi.
+sitadi_2|Sitadi
+sitadi_3|sitadi,
+kuri_sitadi_1|kuri Sitadi.
+kuri_sitadi_2|Kuri Sitadi
+kuri_sitadi_3|kuri sitadi,
+i_remera_kuri_sitadi_1|i Remera kuri Sitadi.
+i_remera_kuri_sitadi_2|I Remera kuri Sitadi
+i_remera_kuri_sitadi_3|i Remera, kuri Sitadi.
+ndashaka_kujya_1|Ndashaka kujya i Remera kuri Sitadi.
+ndashaka_kujya_2|Ndashaka kujya i Remera kuri Sitadi
+ndashaka_kujya_3|Ndashaka kujya i Remera, kuri Sitadi.
+ni_angahe_full_1|I Remera kuri Sitadi ni angahe?
+ni_angahe_full_2|I Remera kuri Sitadi, ni angahe?
+ni_angahe_full_3|I Remera kuri sitadi nangahe?

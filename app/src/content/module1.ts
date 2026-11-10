@@ -55,6 +55,9 @@ const audio = {
   ndashakaKujya: require('../../assets/audio/ndashaka_kujya.wav'),
   niAngahe: require('../../assets/audio/ni_angahe.wav'),
   ndaguha: require('../../assets/audio/ndaguha.wav'),
+  partNiAngahe: require('../../assets/audio/part_ni_angahe.wav'),
+  partMaganaInani: require('../../assets/audio/part_magana_inani.wav'),
+  partNdaguhaMaganaInani: require('../../assets/audio/part_ndaguha_magana_inani.wav'),
 };
 
 const me = {
@@ -67,23 +70,28 @@ const me = {
   oya: { text: 'Oya', meaning: 'No', audio: audio.oya },
   murakoze: { text: 'Murakoze', meaning: 'Thank you', audio: audio.murakoze },
   whereTo: {
-    text: 'Ndashaka kujya i Remera kuri Stade.',
+    text: 'Ndashaka kujya i Remera kuri Sitadi.',
     meaning: 'I want to go to Remera, to the stadium.',
     audio: audio.ndashakaKujya,
   },
-  howMuch: { text: 'I Remera kuri Stade ni angahe?', meaning: 'How much to Remera stadium?', audio: audio.niAngahe },
+  howMuch: { text: 'I Remera kuri Sitadi ni angahe?', meaning: 'How much to Remera stadium?', audio: audio.niAngahe },
   offer: { text: 'Oya, ndaguha magana inani.', meaning: "No, I'll give you 800 francs.", audio: audio.ndaguha },
 } satisfies Record<string, Line>;
 
 // Backward build-up: the end of a long phrase first, so its natural melody is kept.
-// Their clips are waiting for the native speaker's approval (tools/voice/module1-buildup.txt).
+// "Stade" is written "Sitadi" in Kinyarwanda, which has no "st" cluster.
+// The Sitadi clips are waiting for the native speaker's approval (tools/voice/module1-sitadi.txt).
 const part = {
-  stade: { text: 'Stade', meaning: 'the stadium' },
-  kuriStade: { text: 'kuri Stade', meaning: 'to the stadium' },
-  iRemeraKuriStade: { text: 'i Remera kuri Stade', meaning: 'to Remera, to the stadium' },
-  niAngahe: { text: 'ni angahe?', meaning: 'how much is it?' },
-  maganaInani: { text: 'magana inani', meaning: 'eight hundred' },
-  ndaguhaMaganaInani: { text: 'ndaguha magana inani', meaning: "I'll give you eight hundred" },
+  sitadi: { text: 'Sitadi', meaning: 'stadium' },
+  kuriSitadi: { text: 'kuri Sitadi', meaning: 'to the stadium' },
+  iRemeraKuriSitadi: { text: 'i Remera kuri Sitadi', meaning: 'to Remera, to the stadium' },
+  niAngahe: { text: 'ni angahe?', meaning: 'how much is it?', audio: audio.partNiAngahe },
+  maganaInani: { text: 'magana inani', meaning: 'eight hundred', audio: audio.partMaganaInani },
+  ndaguhaMaganaInani: {
+    text: 'ndaguha magana inani',
+    meaning: "I'll give you eight hundred",
+    audio: audio.partNdaguhaMaganaInani,
+  },
 } satisfies Record<string, Line>;
 
 const motari = {
@@ -146,9 +154,9 @@ export const LESSONS: Lesson[] = [
     goal: 'Tell a motari where you want to go.',
     kind: 'steps',
     steps: [
-      learn(part.stade),
-      learn(part.kuriStade),
-      learn(part.iRemeraKuriStade),
+      learn(part.sitadi),
+      learn(part.kuriSitadi),
+      learn(part.iRemeraKuriSitadi),
       learn(me.whereTo),
       listen(motari.knowIt, "No, I don't know it.", "It's 1000 francs."),
       recall(me.whereTo),

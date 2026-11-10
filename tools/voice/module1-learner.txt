@@ -7,6 +7,6 @@ mota|Mota?
 yego|Yego
 oya|Oya
 murakoze|Murakoze
-ndashaka_kujya|Ndashaka kujya i Remera kuri Stade.
-ni_angahe|I Remera kuri Stade ni angahe?
+ndashaka_kujya|Ndashaka kujya i Remera kuri Sitadi.
+ni_angahe|I Remera kuri Sitadi ni angahe?
 ndaguha|Oya, ndaguha magana inani.

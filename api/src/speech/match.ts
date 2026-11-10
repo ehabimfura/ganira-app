@@ -3,7 +3,7 @@
 // word is searched for inside the heard text, in order, allowing a few wrong letters.
 
 export interface WordResult {
-  word: string; // as the learner sees it, e.g. "Stade."
+  word: string; // as the learner sees it, e.g. "Sitadi."
   heard: boolean;
 }
 
