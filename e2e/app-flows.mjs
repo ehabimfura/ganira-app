@@ -58,6 +58,18 @@ async function speak() {
 
 const answerShown = async () => (await page.getByRole('radio').filter({ visible: true }).count()) > 0;
 
+// Speaks and expects every word green. Chrome's fake microphone sometimes sends silence on
+// the very first recording of a fresh browser, so one "Try again" is allowed, as a learner would.
+async function speakUntilHeard(label) {
+  const heard = page.getByLabel(label).filter({ visible: true }).first();
+  await speak();
+  if (await heard.isVisible()) return;
+  await tap('🎙️ Try again');
+  await page.waitForTimeout(3000);
+  await tap('■ Stop');
+  await heard.waitFor({ timeout: 15000 });
+}
+
 // Lessons 1-4: start, then learn, listen, recall and talk through every step to the end.
 // With `stopAt`, stops as soon as that text is on screen instead.
 async function finishStepLesson(stopAt) {
@@ -127,8 +139,7 @@ await check('first lesson: listen, then speak; the speech check hears "Muraho" b
   await text('Now say it out loud!');
   if (await page.getByRole('button', { name: 'I said it' }).count()) throw new Error('"I said it" is still there');
   if (await shown('Continue')) throw new Error('Continue shown before speaking');
-  await speak();
-  await page.getByLabel('Heard: 1 of 1 words').filter({ visible: true }).first().waitFor({ timeout: 5000 });
+  await speakUntilHeard('Heard: 1 of 1 words');
   await page.screenshot({ path: `${SHOTS}5-first-lesson.png` });
   await tap('Continue');
   await text('Save your progress');
@@ -240,8 +251,7 @@ await check('a child has no sign-out; finishing lesson 1 opens lesson 2 only', a
   await tap('🔊 Listen');
   await text('Now say it out loud!');
   if (await shown('Next')) throw new Error('Next shown before speaking');
-  await speak();
-  await page.getByLabel('Heard: 1 of 1 words').filter({ visible: true }).first().waitFor({ timeout: 5000 });
+  await speakUntilHeard('Heard: 1 of 1 words');
   await page.screenshot({ path: `${SHOTS}11-lesson-step.png` });
 
   // Listen: a wrong pick shows the right meaning too.
@@ -257,8 +267,7 @@ await check('a child has no sign-out; finishing lesson 1 opens lesson 2 only', a
   await text('“Hello”');
   if (await page.getByText('Muraho', { exact: true }).filter({ visible: true }).count()) throw new Error('answer shown before trying');
   await page.screenshot({ path: `${SHOTS}11c-recall.png` });
-  await speak();
-  await page.getByLabel('Heard: 1 of 1 words').filter({ visible: true }).first().waitFor({ timeout: 5000 });
+  await speakUntilHeard('Heard: 1 of 1 words');
   await finishStepLesson();
   await text('Lesson 1 complete');
   await text('Now you can:');

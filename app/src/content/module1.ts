@@ -55,6 +55,9 @@ const audio = {
   ndashakaKujya: require('../../assets/audio/ndashaka_kujya.wav'),
   niAngahe: require('../../assets/audio/ni_angahe.wav'),
   ndaguha: require('../../assets/audio/ndaguha.wav'),
+  partSitadi: require('../../assets/audio/part_sitadi.wav'),
+  partKuriSitadi: require('../../assets/audio/part_kuri_sitadi.wav'),
+  partIRemeraKuriSitadi: require('../../assets/audio/part_i_remera_kuri_sitadi.wav'),
   partNiAngahe: require('../../assets/audio/part_ni_angahe.wav'),
   partMaganaInani: require('../../assets/audio/part_magana_inani.wav'),
   partNdaguhaMaganaInani: require('../../assets/audio/part_ndaguha_magana_inani.wav'),
@@ -80,11 +83,14 @@ const me = {
 
 // Backward build-up: the end of a long phrase first, so its natural melody is kept.
 // "Stade" is written "Sitadi" in Kinyarwanda, which has no "st" cluster.
-// The Sitadi clips are waiting for the native speaker's approval (tools/voice/module1-sitadi.txt).
 const part = {
-  sitadi: { text: 'Sitadi', meaning: 'stadium' },
-  kuriSitadi: { text: 'kuri Sitadi', meaning: 'to the stadium' },
-  iRemeraKuriSitadi: { text: 'i Remera kuri Sitadi', meaning: 'to Remera, to the stadium' },
+  sitadi: { text: 'Sitadi', meaning: 'stadium', audio: audio.partSitadi },
+  kuriSitadi: { text: 'kuri Sitadi', meaning: 'to the stadium', audio: audio.partKuriSitadi },
+  iRemeraKuriSitadi: {
+    text: 'i Remera kuri Sitadi',
+    meaning: 'to Remera, to the stadium',
+    audio: audio.partIRemeraKuriSitadi,
+  },
   niAngahe: { text: 'ni angahe?', meaning: 'how much is it?', audio: audio.partNiAngahe },
   maganaInani: { text: 'magana inani', meaning: 'eight hundred', audio: audio.partMaganaInani },
   ndaguhaMaganaInani: {
