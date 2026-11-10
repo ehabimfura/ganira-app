@@ -3,17 +3,19 @@ import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { Speak } from '@/components/speak';
 import { Body, Button, Screen, Title } from '@/components/ui';
 import { useSession } from '@/lib/session';
 import { colors, font, space } from '@/theme';
 
 // Speaking in the first seconds: hear "Muraho" in the lesson voice, then say it.
-// There is no skip, and no "I said it" button: the speech check (Nov 12) will decide
-// when the word was said, and only then play the chime and success vibration.
+// There is no skip and no "I said it" button: the speech check hears the learner,
+// and only a fully heard word plays the chime and success vibration.
 export default function FirstLesson() {
   const { status } = useSession();
   const voice = useAudioPlayer(require('../../assets/audio/muraho.wav'));
   const [heard, setHeard] = useState(false);
+  const [spoke, setSpoke] = useState(false);
 
   const listen = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
@@ -46,7 +48,8 @@ export default function FirstLesson() {
       {heard && (
         <>
           <Body>Now say it out loud!</Body>
-          <Button label="Continue" onPress={next} />
+          <Speak expected="Muraho" onTried={() => setSpoke(true)} />
+          {spoke && <Button label="Continue" onPress={next} />}
         </>
       )}
     </Screen>

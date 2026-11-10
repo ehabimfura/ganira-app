@@ -17,6 +17,12 @@ const CREDITS = [
     url: 'https://huggingface.co/badrex/w2v-bert-2.0-kinyarwanda-asr',
   },
   {
+    what: 'Speech check',
+    who: 'w2v-BERT 2.0 Kinyarwanda ASR by Badr M. Abdullah / the ASRwanda team and Digital Umuganda, ONNX export by OpenVoiceOS',
+    licence: 'CC BY 4.0',
+    url: 'https://huggingface.co/OpenVoiceOS/w2v-bert-2.0-kinyarwanda-onnx',
+  },
+  {
     what: 'Sounds',
     who: 'Made for Ganira',
     licence: '',

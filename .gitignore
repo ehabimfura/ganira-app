@@ -22,3 +22,7 @@ e2e/shots/
 # Generated voice clips waiting for approval
 tools/voice/out/
 __pycache__/
+
+# Speech model (about 600 MB) and its Python environment
+speech/model/
+speech/.venv/

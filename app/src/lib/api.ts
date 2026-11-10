@@ -44,6 +44,9 @@ const MESSAGES: Record<string, string> = {
   LESSON_LOCKED: 'Finish the lesson before this one first.',
   LESSON_NOT_FOUND: 'That lesson was not found.',
   NO_ACTIVE_PROFILE: 'Choose who is learning first.',
+  AUDIO_UNREADABLE: "Ganira couldn't hear that recording. Please try again.",
+  SPEECH_UNAVAILABLE: "Ganira can't check speech right now. You can still carry on.",
+  RECORDING_TOO_LONG: 'That recording was too long. Please say just the phrase.',
   NETWORK: "Can't reach Ganira. Check your internet connection.",
   NOT_CONFIGURED: 'The app is missing its server address (EXPO_PUBLIC_API_URL).',
 };

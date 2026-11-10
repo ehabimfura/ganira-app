@@ -27,8 +27,17 @@ async function check(name, fn) {
   }
 }
 
-const browser = await chromium.launch().catch(() => chromium.launch({ channel: 'chrome' }));
-const page = await (await browser.newContext({ viewport: { width: 390, height: 844 } })).newPage();
+// The fake microphone "says" the approved Muraho clip, so the speech check runs for real.
+// Needs the speech service running too (cd speech && .venv/bin/python server.py).
+// Chrome loops the file, so this copy has silence around the word (and is 48 kHz, which
+// Chrome reads cleanly): a 3-second recording always holds one whole "Muraho".
+const MURAHO = fileURLToPath(new URL('./fixtures/mic-muraho.wav', import.meta.url));
+const launch = {
+  args: ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream', `--use-file-for-fake-audio-capture=${MURAHO}`],
+};
+const browser = await chromium.launch(launch).catch(() => chromium.launch({ ...launch, channel: 'chrome' }));
+const context = await browser.newContext({ viewport: { width: 390, height: 844 }, permissions: ['microphone'] });
+const page = await context.newPage();
 const errors = [];
 page.on('pageerror', (e) => errors.push(e.message));
 // Only visible matches count: screens further back in the stack stay in the page, hidden.
@@ -39,12 +48,21 @@ const shown = async (name) => (await page.getByRole('button', { name, exact: tru
 const isLocked = async (name) =>
   (await page.getByRole('button', { name, exact: true }).filter({ visible: true }).first().getAttribute('aria-disabled')) === 'true';
 
-// Lessons 1-4: listen to each phrase, move on, and finish.
+// Records for 3 seconds through the fake microphone and waits for the speech check's answer.
+async function speak() {
+  await tap('🎙️ Speak');
+  await page.waitForTimeout(3000);
+  await tap('■ Stop');
+  await page.getByRole('button', { name: '🎙️ Try again', exact: true }).filter({ visible: true }).first().waitFor({ timeout: 15000 });
+}
+
+// Lessons 1-4: listen to each phrase, say it, move on, and finish.
 async function finishStepLesson() {
-  for (let i = 0; i < 40; i++) {
+  for (let i = 0; i < 60; i++) {
     if (await shown('Back to lessons')) return;
     if (await shown('Finish')) await tap('Finish');
     else if (await shown('Next')) await tap('Next');
+    else if (await shown('🎙️ Speak')) await speak();
     else if (await shown('🔊 Listen')) await tap('🔊 Listen');
     else await page.waitForTimeout(200);
   }
@@ -96,12 +114,15 @@ await check('learner answers level and daily goal', async () => {
   await tap('Continue');
 });
 
-await check('first lesson: must listen before continuing; no "I said it" button', async () => {
+await check('first lesson: listen, then speak; the speech check hears "Muraho" before sign-up', async () => {
   await text('Your first word');
   if (await page.getByRole('button', { name: 'Continue' }).count()) throw new Error('Continue shown before listening');
   await tap('🔊 Listen');
   await text('Now say it out loud!');
   if (await page.getByRole('button', { name: 'I said it' }).count()) throw new Error('"I said it" is still there');
+  if (await shown('Continue')) throw new Error('Continue shown before speaking');
+  await speak();
+  await page.getByLabel('Heard: 1 of 1 words').filter({ visible: true }).first().waitFor({ timeout: 5000 });
   await page.screenshot({ path: `${SHOTS}5-first-lesson.png` });
   await tap('Continue');
   await text('Save your progress');
@@ -208,6 +229,9 @@ await check('a child has no sign-out; finishing lesson 1 opens lesson 2 only', a
   if (await shown('Next')) throw new Error('Next shown before listening');
   await tap('🔊 Listen');
   await text('Now say it out loud!');
+  if (await shown('Next')) throw new Error('Next shown before speaking');
+  await speak();
+  await page.getByLabel('Heard: 1 of 1 words').filter({ visible: true }).first().waitFor({ timeout: 5000 });
   await page.screenshot({ path: `${SHOTS}11-lesson-step.png` });
   await finishStepLesson();
   await text('Lesson 1 complete');
@@ -228,14 +252,17 @@ await check('lessons 2-4 teach the motari\'s words, then the ride ends with "vay
   await tap('Lesson 5: The ride');
   await text('Greet the motari');
   await page.getByRole('radio', { name: 'Mwaramutse' }).click();
+  await speak();
   await tap('Next');
   await text('Mota?');
   await tap('🔊 Listen');
+  await speak();
   await tap('Next');
   // The motari answers with the greeting the learner chose.
   await page.getByLabel('Motari: Mwaramutse').filter({ visible: true }).first().waitFor({ timeout: 8000 });
   for (let i = 0; i < 3; i++) {
     await tap('🔊 Listen');
+    await speak();
     await tap('Next');
   }
   await text('Ntacyo, vayo tugende.');

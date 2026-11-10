@@ -49,8 +49,9 @@ function RootStack() {
 
 export default function RootLayout() {
   useEffect(() => {
-    // Lessons should be heard even when the iPhone's silent switch is on.
-    setAudioModeAsync({ playsInSilentMode: true }).catch(() => {});
+    // Lessons should be heard even when the iPhone's silent switch is on,
+    // and the microphone must be usable for the speech check.
+    setAudioModeAsync({ playsInSilentMode: true, allowsRecording: true }).catch(() => {});
   }, []);
 
   return (

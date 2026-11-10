@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { Speak } from '@/components/speak';
 import { Body, Button } from '@/components/ui';
 import type { Step } from '@/content/module1';
 import { useClipPlayer } from '@/lib/sounds';
 import { colors, font, radius, space } from '@/theme';
 
-// Lessons 1-4: one phrase at a time. A "say" phrase must be heard before moving on.
-// The speech check will later decide when it was said right; until then, Next moves on.
+// Lessons 1-4: one phrase at a time. A "say" phrase is heard, then spoken (the speech
+// check turns the heard words green); Next appears after the first try.
 export function StepLesson({ steps, onFinish }: { steps: Step[]; onFinish: () => void }) {
   const [index, setIndex] = useState(0);
   const isLast = index === steps.length - 1;
@@ -27,6 +28,7 @@ function StepCard({ step, nextLabel, onNext }: { step: Step; nextLabel: string; 
   const play = useClipPlayer();
   const { line } = step;
   const [heard, setHeard] = useState(!line.audio);
+  const [spoke, setSpoke] = useState(step.kind === 'hear');
 
   const listen = () => {
     if (!line.audio) return;
@@ -43,8 +45,13 @@ function StepCard({ step, nextLabel, onNext }: { step: Step; nextLabel: string; 
       </View>
       <View style={styles.actions}>
         {line.audio ? <Button label="🔊 Listen" variant="secondary" onPress={listen} /> : null}
-        {heard && step.kind === 'say' && <Body>Now say it out loud!</Body>}
-        {heard && <Button label={nextLabel} onPress={onNext} />}
+        {heard && step.kind === 'say' && (
+          <>
+            <Body>Now say it out loud!</Body>
+            <Speak expected={line.text} onTried={() => setSpoke(true)} />
+          </>
+        )}
+        {heard && spoke && <Button label={nextLabel} onPress={onNext} />}
       </View>
     </View>
   );

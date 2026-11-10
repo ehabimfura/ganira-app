@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View, type ScrollViewInstance } from 'react-native';
+import { Speak } from '@/components/speak';
 import { Body, Button, Choice } from '@/components/ui';
 import type { GreetingOption, Line, Turn } from '@/content/module1';
 import { useClipPlayer } from '@/lib/sounds';
@@ -85,9 +86,10 @@ function Bubble({ line, mine, onPlay }: { line: Line; mine: boolean; onPlay: (cl
   );
 }
 
-// The learner's next line: hear it, say it, then move on.
+// The learner's next line: hear it, say it (the speech check shows the heard words), then move on.
 function SayTurn({ line, onPlay, onDone }: { line: Line; onPlay: (clip: Line['audio']) => void; onDone: () => void }) {
   const [heard, setHeard] = useState(!line.audio);
+  const [spoke, setSpoke] = useState(false);
   return (
     <View style={styles.turn}>
       <Text style={styles.yourTurn}>Your turn</Text>
@@ -103,8 +105,8 @@ function SayTurn({ line, onPlay, onDone }: { line: Line; onPlay: (clip: Line['au
           }}
         />
       ) : null}
-      {heard && <Body>Now say it out loud!</Body>}
-      {heard && <Button label="Next" onPress={onDone} />}
+      {heard && <Speak expected={line.text} onTried={() => setSpoke(true)} />}
+      {spoke && <Button label="Next" onPress={onDone} />}
     </View>
   );
 }
@@ -120,6 +122,7 @@ function GreetingTurn({
   onDone: (option: GreetingOption) => void;
 }) {
   const [picked, setPicked] = useState<GreetingOption | null>(null);
+  const [spoke, setSpoke] = useState(false);
   return (
     <View style={styles.turn}>
       <Text style={styles.yourTurn}>Your turn: greet the motari</Text>
@@ -131,12 +134,13 @@ function GreetingTurn({
           selected={picked === option}
           onPress={() => {
             setPicked(option);
+            setSpoke(false);
             onPlay(option.line.audio);
           }}
         />
       ))}
-      {picked && <Body>Now say it out loud!</Body>}
-      {picked && <Button label="Next" onPress={() => onDone(picked)} />}
+      {picked && <Speak key={picked.line.text} expected={picked.line.text} onTried={() => setSpoke(true)} />}
+      {picked && spoke && <Button label="Next" onPress={() => onDone(picked)} />}
     </View>
   );
 }

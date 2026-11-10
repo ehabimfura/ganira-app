@@ -3,16 +3,19 @@ import { authRoutes } from "./auth/routes.js";
 import type { Database } from "./db.js";
 import { lessonRoutes } from "./lessons/routes.js";
 import { profileRoutes } from "./profiles/routes.js";
+import { noSpeechService, type Transcribe } from "./speech/client.js";
+import { speechRoutes } from "./speech/routes.js";
 
 export interface AppOptions {
   // Browser origins allowed to call the API. Phones don't need this; only the
   // web build used for testing on a laptop does. Empty means no browser access.
   corsOrigins?: string[];
+  // Turns a recording into text (the speech service). Without it, speech checks answer "unavailable".
+  transcribe?: Transcribe;
 }
 
-export function createApp(db: Database, { corsOrigins = [] }: AppOptions = {}) {
+export function createApp(db: Database, { corsOrigins = [], transcribe = noSpeechService }: AppOptions = {}) {
   const app = express();
-  app.use(express.json());
 
   app.use((req, res, next) => {
     const origin = req.get("origin");
@@ -28,6 +31,10 @@ export function createApp(db: Database, { corsOrigins = [] }: AppOptions = {}) {
     }
     next();
   });
+
+  // Speech uploads are larger than other requests, so they get their own body size limit.
+  app.use(speechRoutes(db, transcribe));
+  app.use(express.json());
 
   // Proves the whole path works: phone -> API -> MySQL -> back.
   app.get("/health", async (_req, res) => {
@@ -46,6 +53,10 @@ export function createApp(db: Database, { corsOrigins = [] }: AppOptions = {}) {
 
   // Anything unexpected: log the details here, send the phone a plain message.
   app.use((error: unknown, _req: Request, res: Response, _next: NextFunction) => {
+    if ((error as { type?: string }).type === "entity.too.large") {
+      res.status(413).json({ error: "RECORDING_TOO_LONG" });
+      return;
+    }
     if ((error as { type?: string }).type === "entity.parse.failed") {
       res.status(400).json({ error: "INVALID_INPUT" });
       return;
