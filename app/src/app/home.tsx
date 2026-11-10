@@ -2,6 +2,7 @@ import { Redirect, router } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Body, Button, ErrorText, Screen, Title } from '@/components/ui';
+import { isUnlocked, LESSONS, MODULE_TITLE } from '@/content/module1';
 import { apiRequest, messageFor } from '@/lib/api';
 import { avatarEmoji } from '@/lib/avatars';
 import { useSession, type Profile } from '@/lib/session';
@@ -70,15 +71,6 @@ function ProfilePicker() {
   );
 }
 
-// The lesson path. Lesson 1 is ready; lessons 2-5 get their content (and titles) on Nov 11.
-const LESSONS = [
-  { number: 1, title: 'Muraho', ready: true },
-  { number: 2, title: 'Coming soon', ready: false },
-  { number: 3, title: 'Coming soon', ready: false },
-  { number: 4, title: 'Coming soon', ready: false },
-  { number: 5, title: 'Coming soon', ready: false },
-];
-
 function LessonHome({ profile, isChild }: { profile: Profile; isChild: boolean }) {
   const { signOut } = useSession();
 
@@ -97,21 +89,26 @@ function LessonHome({ profile, isChild }: { profile: Profile; isChild: boolean }
         )}
       </View>
 
-      {LESSONS.map((lesson) => (
-        <Pressable
-          key={lesson.number}
-          accessibilityRole="button"
-          accessibilityLabel={`Lesson ${lesson.number}: ${lesson.title}`}
-          accessibilityState={{ disabled: !lesson.ready }}
-          disabled={!lesson.ready}
-          onPress={() => router.push('/first-lesson')}
-          style={({ pressed }) => [styles.lesson, !lesson.ready && styles.locked, pressed && styles.pressed]}
-        >
-          <Text style={styles.lessonNumber}>{lesson.number}</Text>
-          <Text style={styles.lessonTitle}>{lesson.title}</Text>
-          <Text style={styles.lessonState}>{lesson.ready ? 'Start' : '🔒'}</Text>
-        </Pressable>
-      ))}
+      <Text style={styles.module}>{MODULE_TITLE}</Text>
+      {LESSONS.map((lesson, index) => {
+        const done = profile.completedLessons.includes(lesson.id);
+        const open = isUnlocked(index, profile.completedLessons);
+        return (
+          <Pressable
+            key={lesson.id}
+            accessibilityRole="button"
+            accessibilityLabel={`Lesson ${index + 1}: ${lesson.title}`}
+            accessibilityState={{ disabled: !open }}
+            disabled={!open}
+            onPress={() => router.push({ pathname: '/lesson/[id]', params: { id: lesson.id } })}
+            style={({ pressed }) => [styles.lesson, !open && styles.locked, pressed && styles.pressed]}
+          >
+            <Text style={styles.lessonNumber}>{index + 1}</Text>
+            <Text style={styles.lessonTitle}>{lesson.title}</Text>
+            <Text style={styles.lessonState}>{done ? '✓' : open ? 'Start' : '🔒'}</Text>
+          </Pressable>
+        );
+      })}
 
       <View style={styles.flex} />
       {!isChild && (
@@ -142,6 +139,7 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', gap: space.md, marginTop: space.md },
   avatar: { fontSize: 40, backgroundColor: colors.surface, borderRadius: radius, padding: space.sm },
   parent: { color: colors.primary, fontWeight: '600', fontSize: font.label, padding: space.sm },
+  module: { fontSize: font.label, fontWeight: '700', color: colors.muted, textTransform: 'uppercase' },
   lesson: {
     flexDirection: 'row',
     alignItems: 'center',

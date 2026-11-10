@@ -60,6 +60,7 @@ describe("sign-up", () => {
         level: "NEW",
         dailyGoalMinutes: 10,
         hasPin: false,
+        completedLessons: [],
       },
     ]);
     expect(profile.body.activeProfileId).toBe(profile.body.profiles[0].id);

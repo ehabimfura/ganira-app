@@ -58,6 +58,7 @@ describe("child profiles", () => {
         level: "NEW",
         dailyGoalMinutes: 5,
         hasPin: false,
+        completedLessons: [],
       },
     ]);
   });

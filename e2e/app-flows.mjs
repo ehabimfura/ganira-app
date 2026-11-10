@@ -35,6 +35,21 @@ page.on('pageerror', (e) => errors.push(e.message));
 const text = (t) => page.getByText(t, { exact: false }).filter({ visible: true }).first().waitFor({ timeout: 8000 });
 const tap = (name) => page.getByRole('button', { name, exact: true }).filter({ visible: true }).first().click();
 const fill = (label, value) => page.getByRole('textbox', { name: label }).fill(value);
+const shown = async (name) => (await page.getByRole('button', { name, exact: true }).filter({ visible: true }).count()) > 0;
+const isLocked = async (name) =>
+  (await page.getByRole('button', { name, exact: true }).filter({ visible: true }).first().getAttribute('aria-disabled')) === 'true';
+
+// Lessons 1-4: listen to each phrase, move on, and finish.
+async function finishStepLesson() {
+  for (let i = 0; i < 40; i++) {
+    if (await shown('Back to lessons')) return;
+    if (await shown('Finish')) await tap('Finish');
+    else if (await shown('Next')) await tap('Next');
+    else if (await shown('🔊 Listen')) await tap('🔊 Listen');
+    else await page.waitForTimeout(200);
+  }
+  throw new Error('the lesson never reached its end');
+}
 
 await check('welcome screen shows on first launch', async () => {
   await page.goto(BASE);
@@ -105,7 +120,7 @@ await check('learner sign-up: short password is caught, then account is created'
   await tap('Create account');
   await text('Muraho, Amina!');
   await text('Daily goal: 15 minutes');
-  await page.getByRole('button', { name: 'Lesson 1: Muraho' }).waitFor();
+  await page.getByRole('button', { name: 'Lesson 1: Greetings' }).waitFor();
   await page.screenshot({ path: `${SHOTS}7-home-learner.png` });
 });
 
@@ -184,12 +199,59 @@ await check('a PIN-locked child needs the right PIN', async () => {
   await page.screenshot({ path: `${SHOTS}10-child-home.png` });
 });
 
-await check('a child has no sign-out, and Lesson 1 opens and returns', async () => {
+await check('a child has no sign-out; finishing lesson 1 opens lesson 2 only', async () => {
   if (await page.getByRole('button', { name: 'Sign out' }).count()) throw new Error('Sign out shown in child mode');
-  await tap('Lesson 1: Muraho');
-  await text('Your first word');
+  if (!(await isLocked('Lesson 2: Yes and no'))) throw new Error('lesson 2 open before lesson 1 was done');
+  await tap('Lesson 1: Greetings');
+  await text('1. Greetings');
+  await text('Muraho');
+  if (await shown('Next')) throw new Error('Next shown before listening');
   await tap('🔊 Listen');
-  await tap('Continue');
+  await text('Now say it out loud!');
+  await page.screenshot({ path: `${SHOTS}11-lesson-step.png` });
+  await finishStepLesson();
+  await text('Lesson 1 complete');
+  await page.screenshot({ path: `${SHOTS}12-lesson-done.png` });
+  await tap('Back to lessons');
+  await text('Muraho, Ineza!');
+  if (await isLocked('Lesson 2: Yes and no')) throw new Error('lesson 2 still locked');
+  if (!(await isLocked('Lesson 3: Where to?'))) throw new Error('lesson 3 open too early');
+});
+
+await check('lessons 2-4 teach the motari\'s words, then the ride ends with "vayo tugende"', async () => {
+  for (const name of ['Lesson 2: Yes and no', 'Lesson 3: Where to?', 'Lesson 4: How much?']) {
+    await tap(name);
+    await finishStepLesson();
+    await tap('Back to lessons');
+    await text('Muraho, Ineza!');
+  }
+  await tap('Lesson 5: The ride');
+  await text('Greet the motari');
+  await page.getByRole('radio', { name: 'Mwaramutse' }).click();
+  await tap('Next');
+  await text('Mota?');
+  await tap('🔊 Listen');
+  await tap('Next');
+  // The motari answers with the greeting the learner chose.
+  await page.getByLabel('Motari: Mwaramutse').filter({ visible: true }).first().waitFor({ timeout: 8000 });
+  for (let i = 0; i < 3; i++) {
+    await tap('🔊 Listen');
+    await tap('Next');
+  }
+  await text('Ntacyo, vayo tugende.');
+  // The last line must be on screen, above the Finish button, not just somewhere in the chat.
+  const last = page.getByText('Ntacyo, vayo tugende.').filter({ visible: true }).first();
+  const finish = page.getByRole('button', { name: '🏍️ Finish' }).filter({ visible: true }).first();
+  for (let i = 0; ; i++) {
+    const [line, button] = [await last.boundingBox(), await finish.boundingBox()];
+    if (line && button && line.y + line.height <= button.y) break;
+    if (i === 15) throw new Error('the last line of the ride is hidden below the Finish button');
+    await page.waitForTimeout(200);
+  }
+  await page.screenshot({ path: `${SHOTS}13-ride.png` });
+  await tap('🏍️ Finish');
+  await text('Lesson 5 complete');
+  await tap('Back to lessons');
   await text('Muraho, Ineza!');
 });
 

@@ -7,10 +7,12 @@ export interface Profile {
   kind: 'SELF' | 'CHILD';
   nickname: string;
   avatar: string;
-  path: 'FAMILY' | 'LIVING_IN_RWANDA' | null;
+  path: 'FAMILY' | 'ADULT' | null;
   level: 'NEW' | 'FEW_WORDS' | 'SHORT_CHAT' | null;
   dailyGoalMinutes: number;
   hasPin: boolean;
+  // Lesson ids finished by this profile, in the order they were finished.
+  completedLessons: string[];
 }
 
 export interface Me {

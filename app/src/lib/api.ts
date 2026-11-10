@@ -41,6 +41,9 @@ const MESSAGES: Record<string, string> = {
   TOO_MANY_PROFILES: 'You can have up to 6 child profiles.',
   PARENT_MODE_REQUIRED: 'Only the parent can do this.',
   PROFILE_NOT_FOUND: 'That profile was not found.',
+  LESSON_LOCKED: 'Finish the lesson before this one first.',
+  LESSON_NOT_FOUND: 'That lesson was not found.',
+  NO_ACTIVE_PROFILE: 'Choose who is learning first.',
   NETWORK: "Can't reach Ganira. Check your internet connection.",
   NOT_CONFIGURED: 'The app is missing its server address (EXPO_PUBLIC_API_URL).',
 };

@@ -160,6 +160,14 @@ export function authRoutes(db: Database) {
          FROM learners WHERE account_id = ? ORDER BY id`,
       [session.accountId],
     );
+    const [progress] = await db.pool.query<RowDataPacket[]>(
+      `SELECT p.learner_id, p.lesson_id
+         FROM lesson_progress p JOIN learners l ON l.id = p.learner_id
+        WHERE l.account_id = ? ORDER BY p.completed_at, p.lesson_id`,
+      [session.accountId],
+    );
+    const completedBy = (learnerId: number) =>
+      progress.filter((p) => p.learner_id === learnerId).map((p) => p.lesson_id as string);
     res.json({
       account: accounts[0],
       profiles: learners.map((l) => ({
@@ -171,6 +179,7 @@ export function authRoutes(db: Database) {
         level: l.level,
         dailyGoalMinutes: l.daily_goal_minutes,
         hasPin: Boolean(l.has_pin),
+        completedLessons: completedBy(l.id),
       })),
       activeProfileId: session.activeLearnerId,
     });

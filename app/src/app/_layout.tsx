@@ -41,6 +41,7 @@ function RootStack() {
         <Stack.Screen name="add-child" />
         <Stack.Screen name="pin" />
         <Stack.Screen name="parent-unlock" />
+        <Stack.Screen name="lesson/[id]" />
       </Stack.Protected>
     </Stack>
   );

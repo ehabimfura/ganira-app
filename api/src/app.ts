@@ -1,6 +1,7 @@
 import express, { type NextFunction, type Request, type Response } from "express";
 import { authRoutes } from "./auth/routes.js";
 import type { Database } from "./db.js";
+import { lessonRoutes } from "./lessons/routes.js";
 import { profileRoutes } from "./profiles/routes.js";
 
 export interface AppOptions {
@@ -41,6 +42,7 @@ export function createApp(db: Database, { corsOrigins = [] }: AppOptions = {}) {
 
   app.use(authRoutes(db));
   app.use(profileRoutes(db));
+  app.use(lessonRoutes(db));
 
   // Anything unexpected: log the details here, send the phone a plain message.
   app.use((error: unknown, _req: Request, res: Response, _next: NextFunction) => {

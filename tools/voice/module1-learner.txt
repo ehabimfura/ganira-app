@@ -1,0 +1,12 @@
+# Module 1 "Taking a moto in Kigali": the learner's lines, in voice B.
+# The motari's lines are recorded by a native speaker (see module1-motari.txt).
+mwaramutse|Mwaramutse
+mwiriwe|Mwiriwe
+bite_se|Bite se
+mota|Mota?
+yego|Yego
+oya|Oya
+murakoze|Murakoze
+ndashaka_kujya|Ndashaka kujya i Remera kuri Stade.
+ni_angahe|I Remera kuri Stade ni angahe?
+ndaguha|Oya, ndaguha magana inani.
