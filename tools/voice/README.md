@@ -46,3 +46,17 @@ done
    different, so keep the exact file that was approved; generating it again gives a new clip
    that needs a new check. For a rejected clip, try a
    different spelling or punctuation and generate again, or record it by voice memo.
+
+## The motari's voice (a man's voice)
+
+The motari's lines are voice-B takes lowered to a man's voice with `deepen.py`, which uses
+the WORLD vocoder to drop the pitch to about 125 Hz while changing the voice's size only a
+little (lowering both, like a slowed tape, sounds like a cartoon giant). The approved depth is `m1`.
+
+```sh
+~/ganira-voice-venv/bin/pip install pyworld "setuptools<81" soundfile
+~/ganira-voice-venv/bin/python tools/voice/generate.py lines.txt --model-dir ~/ganira-voice-model --out takes/
+~/ganira-voice-venv/bin/python tools/voice/deepen.py takes/ --out out/motari-man --versions m1
+```
+
+A SpeechT5 male voice (NMutangana) was tried and rejected: a buzzing sound throughout.

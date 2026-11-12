@@ -11,9 +11,8 @@ import type { AudioSource } from 'expo-audio';
 //            including 1-2 phrases from earlier lessons (spaced review)
 //   talk   - a short exchange with the motari using the lesson's phrases
 //
-// Learner lines are in voice B, each clip approved by a native speaker.
-// The motari's lines are recorded by a native speaker (tools/voice/module1-motari.txt);
-// until a recording is added, that line shows as text with no sound.
+// Every clip is approved by a native speaker. Learner lines are in voice B; the motari's
+// are voice-B takes lowered to a man's voice. A line without a clip shows as text only.
 
 export interface Line {
   text: string;
@@ -55,6 +54,13 @@ const audio = {
   ndashakaKujya: require('../../assets/audio/ndashaka_kujya.wav'),
   niAngahe: require('../../assets/audio/ni_angahe.wav'),
   ndaguha: require('../../assets/audio/ndaguha.wav'),
+  motariMurahoNeza: require('../../assets/audio/motari_muraho_neza.wav'),
+  motariNdahazi: require('../../assets/audio/motari_ndahazi.wav'),
+  motariMwaramutse: require('../../assets/audio/motari_mwaramutse.wav'),
+  motariMwiriwe: require('../../assets/audio/motari_mwiriwe.wav'),
+  motariBiteSe: require('../../assets/audio/motari_bite_se.wav'),
+  motariIgihumbi: require('../../assets/audio/motari_igihumbi.wav'),
+  motariTugende: require('../../assets/audio/motari_tugende.wav'),
   partSitadi: require('../../assets/audio/part_sitadi.wav'),
   partKuriSitadi: require('../../assets/audio/part_kuri_sitadi.wav'),
   partIRemeraKuriSitadi: require('../../assets/audio/part_i_remera_kuri_sitadi.wav'),
@@ -100,14 +106,16 @@ const part = {
   },
 } satisfies Record<string, Line>;
 
+// The motari's voice: approved voice-B takes lowered to a man's voice (tools/voice/deepen.py, m1).
 const motari = {
-  muraho: { text: 'Muraho', meaning: 'Hello' },
-  mwaramutse: { text: 'Mwaramutse', meaning: 'Good morning' },
-  mwiriwe: { text: 'Mwiriwe', meaning: 'Good afternoon / evening' },
-  biteSe: { text: 'Bite se', meaning: "Hi, how's it going?" },
-  knowIt: { text: 'Yego, ndahazi.', meaning: 'Yes, I know the place.' },
-  price: { text: 'Ni igihumbi.', meaning: "It's 1000 francs." },
-  letsGo: { text: 'Ntacyo, vayo tugende.', meaning: "Okay, come, let's go." },
+  muraho: { text: 'Muraho neza', meaning: 'Hello to you too', audio: audio.motariMurahoNeza },
+  mwaramutse: { text: 'Mwaramutse', meaning: 'Good morning', audio: audio.motariMwaramutse },
+  mwiriwe: { text: 'Mwiriwe', meaning: 'Good afternoon / evening', audio: audio.motariMwiriwe },
+  biteSe: { text: 'Bite se', meaning: "Hi, how's it going?", audio: audio.motariBiteSe },
+  // Said with a long a, "ndahaazi", as people speak it.
+  knowIt: { text: 'Yego, ndahazi.', meaning: 'Yes, I know the place.', audio: audio.motariNdahazi },
+  price: { text: 'Ni igihumbi.', meaning: "It's 1000 francs.", audio: audio.motariIgihumbi },
+  letsGo: { text: 'Ntacyo, vayo tugende.', meaning: "Okay, come, let's go.", audio: audio.motariTugende },
 } satisfies Record<string, Line>;
 
 const learn = (line: Line): Step => ({ kind: 'learn', line });

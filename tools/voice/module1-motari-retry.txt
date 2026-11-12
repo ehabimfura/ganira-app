@@ -1,0 +1,10 @@
+# Motari lines made again after the native speaker's review (voice B, then deepen.py --versions m1).
+# The motari answers "Muraho" with "Muraho neza". "Ndahazi" is said with a long a: "ndahaazi".
+motari_muraho_neza_1|Muraho neza.
+motari_muraho_neza_2|Muraho neza
+motari_muraho_neza_3|muraho neza,
+motari_muraho_neza_4|Muraho, neza.
+motari_ndahaazi_1|Yego, ndahaazi.
+motari_ndahaazi_2|Yego ndahaazi
+motari_ndahaazi_3|yego, ndahaazi,
+motari_ndahaazi_4|Yego, ndahaaazi.

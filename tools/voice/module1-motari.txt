@@ -1,9 +1,8 @@
-# Module 1: the motari's lines. Record each as a voice memo, a male voice if possible.
-# Save as <id>.m4a or .wav. The greeting replies match whichever greeting the learner used.
-motari_muraho|Muraho
-motari_mwaramutse|Mwaramutse
-motari_mwiriwe|Mwiriwe
+# Module 1: the motari's lines. Made in voice B, then lowered to a man's voice with
+# deepen.py (depth m1), each approved by a native speaker. The greeting replies match the
+# learner's greeting; Mwaramutse and Mwiriwe reuse the learner's approved clips, lowered.
+motari_muraho|Muraho neza
 motari_bite_se|Bite se
-motari_ndahazi|Yego, ndahazi.
+motari_ndahazi|Yego, ndahaazi.
 motari_igihumbi|Ni igihumbi.
 motari_tugende|Ntacyo, vayo tugende.
