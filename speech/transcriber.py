@@ -12,7 +12,8 @@ from pathlib import Path
 import av
 import numpy as np
 import onnxruntime as ort
-from transformers import SeamlessM4TFeatureExtractor
+
+from features import speech_features
 
 SAMPLE_RATE = 16000
 MAX_SECONDS = 15
@@ -77,8 +78,6 @@ def trim_silence(audio: np.ndarray) -> np.ndarray:
 class Transcriber:
     def __init__(self, model_dir: Path):
         self.session = ort.InferenceSession(str(model_dir / "model.int8.onnx"), providers=["CPUExecutionProvider"])
-        # The feature extractor the model was trained with (log-mel, normalised, 2 frames stacked).
-        self.features = SeamlessM4TFeatureExtractor()
         self.last_timing = ""
         self.vocab = {}
         for line in (model_dir / "vocab.txt").read_text(encoding="utf-8").splitlines():
@@ -88,7 +87,8 @@ class Transcriber:
     def transcribe(self, audio: np.ndarray) -> str:
         audio = trim_silence(audio)
         started = time.perf_counter()
-        features = self.features(audio, sampling_rate=SAMPLE_RATE, return_tensors="np")["input_features"]
+        # The input the model was trained with: log-mel, normalised, 2 frames stacked (features.py).
+        features = speech_features(audio)[None]
         featured = time.perf_counter()
         logprobs, lengths = self.session.run(
             None,
