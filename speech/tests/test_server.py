@@ -3,6 +3,7 @@
 import json
 import sys
 import threading
+import time
 import unittest
 import urllib.error
 import urllib.request
@@ -56,6 +57,47 @@ class ServerKeyTest(unittest.TestCase):
 
     def test_the_right_key_gets_the_text(self):
         self.assertEqual(self.post({"X-Speech-Key": "secret-key"}), (200, {"text": "muraho"}))
+
+
+class SlowTranscriber:
+    """Remembers how many transcriptions ran at the same moment."""
+
+    def __init__(self):
+        self.running = 0
+        self.most = 0
+        self.lock = threading.Lock()
+
+    def transcribe(self, audio):
+        with self.lock:
+            self.running += 1
+            self.most = max(self.most, self.running)
+        time.sleep(0.2)
+        with self.lock:
+            self.running -= 1
+        return "muraho"
+
+
+class OneAtATimeTest(unittest.TestCase):
+    """On a one-core server, checks that run together all slow down; one at a time is faster."""
+
+    def test_recordings_are_transcribed_one_after_another(self):
+        transcriber = SlowTranscriber()
+        server = ThreadingHTTPServer(("127.0.0.1", 0), make_handler(transcriber))
+        threading.Thread(target=server.serve_forever, daemon=True).start()
+        url = f"http://127.0.0.1:{server.server_port}/transcribe"
+        try:
+            def post():
+                urllib.request.urlopen(urllib.request.Request(url, data=WAV, method="POST")).read()
+
+            threads = [threading.Thread(target=post) for _ in range(3)]
+            for t in threads:
+                t.start()
+            for t in threads:
+                t.join()
+        finally:
+            server.shutdown()
+            server.server_close()
+        self.assertEqual(transcriber.most, 1)
 
 
 if __name__ == "__main__":
