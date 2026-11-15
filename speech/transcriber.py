@@ -18,6 +18,8 @@ import onnxruntime as ort
 from features import speech_features
 
 SAMPLE_RATE = 16000
+# Which model file in the model folder to load (see tools/quantize.py).
+MODEL_FILE = os.environ.get("SPEECH_MODEL_FILE", "model.int8.onnx")
 MAX_SECONDS = 15
 BLANK = "<blk>"
 WORD_SEPARATOR = "▁"
@@ -98,8 +100,13 @@ class Transcriber:
             threads or "auto",
             "off" if os.environ.get("SPEECH_PREPACK") == "0" else "on",
         )
+        # SPEECH_PROFILE=1 records how long each kind of model step takes (see profile_summary).
+        self.profiling = os.environ.get("SPEECH_PROFILE") == "1"
+        if self.profiling:
+            options.enable_profiling = True
+            options.profile_file_prefix = "/tmp/speech-profile"
         self.session = ort.InferenceSession(
-            str(model_dir / "model.int8.onnx"), options, providers=["CPUExecutionProvider"]
+            str(model_dir / MODEL_FILE), options, providers=["CPUExecutionProvider"]
         )
         self.last_timing = ""
         self.vocab = {}
@@ -119,7 +126,26 @@ class Transcriber:
         )
         done = time.perf_counter()
         self.last_timing = f"features {(featured - started) * 1000:.0f} ms, model {(done - featured) * 1000:.0f} ms"
+        if self.profiling:
+            self.last_timing += "; " + self.profile_summary()
         return self._greedy_ctc(logprobs[0][: lengths[0]].argmax(axis=-1))
+
+    def profile_summary(self) -> str:
+        """The model step types that took longest in the first run, from ONNX Runtime's profile."""
+        import json
+
+        path = self.session.end_profiling()
+        totals: dict[str, int] = {}
+        for event in json.loads(Path(path).read_text()):
+            if event.get("cat") == "Node":
+                op = event.get("args", {}).get("op_name", "?")
+                totals[op] = totals.get(op, 0) + int(event.get("dur", 0))
+        Path(path).unlink(missing_ok=True)
+        # Only the first check after a start is profiled: restarting the profiler would need
+        # a second copy of the model in memory.
+        self.profiling = False
+        top = sorted(totals.items(), key=lambda kv: -kv[1])[:6]
+        return "slowest steps: " + ", ".join(f"{op} {us // 1000} ms" for op, us in top)
 
     def _greedy_ctc(self, ids: np.ndarray) -> str:
         """Best token per frame, repeats merged, blanks dropped."""
