@@ -6,6 +6,8 @@ Digital Umuganda. Licence CC BY 4.0, credited on the app's Credits screen.
 """
 
 import io
+import logging
+import os
 import time
 from pathlib import Path
 
@@ -77,7 +79,23 @@ def trim_silence(audio: np.ndarray) -> np.ndarray:
 
 class Transcriber:
     def __init__(self, model_dir: Path):
-        self.session = ort.InferenceSession(str(model_dir / "model.int8.onnx"), providers=["CPUExecutionProvider"])
+        # In a container the machine may show many processors while the plan pays for one.
+        # ONNX Runtime would start a busy-waiting worker per processor, all fighting for that
+        # one, so the worker count comes from SPEECH_THREADS and idle workers sleep.
+        options = ort.SessionOptions()
+        threads = int(os.environ.get("SPEECH_THREADS", "0"))  # 0: ONNX Runtime decides
+        options.intra_op_num_threads = threads
+        options.inter_op_num_threads = 1
+        options.add_session_config_entry("session.intra_op.allow_spinning", "0")
+        logging.getLogger("speech").info(
+            "Processors seen: %s; usable: %s; model threads: %s",
+            os.cpu_count(),
+            len(os.sched_getaffinity(0)) if hasattr(os, "sched_getaffinity") else "?",
+            threads or "auto",
+        )
+        self.session = ort.InferenceSession(
+            str(model_dir / "model.int8.onnx"), options, providers=["CPUExecutionProvider"]
+        )
         self.last_timing = ""
         self.vocab = {}
         for line in (model_dir / "vocab.txt").read_text(encoding="utf-8").splitlines():
