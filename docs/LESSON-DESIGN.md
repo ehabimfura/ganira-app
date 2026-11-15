@@ -38,11 +38,21 @@ Feedback is color, a sound and a vibration, never praise words. A right answer t
 green and a wrong one red, with the right answer shown in green. Speaking has no pass
 mark: after any try the learner can move on or try again.
 
-## Next
+## Daily streak and spaced review
 
-A daily review that brings each phrase back just before it is likely to be forgotten,
-as Duolingo does with half-life regression (Settles & Meeder, 2016). It needs
-per-phrase memory tracking.
+- **Streak.** Each Kigali day on which a learner finishes a level or a review counts. The
+  flame on the Learn tab shows the days in a row and lights up once today is done; a
+  streak lasts until the end of the next day.
+- **Phrase memory.** Every answered exercise updates that phrase's half-life, following
+  half-life regression (Settles & Meeder, 2016): the chance of recalling a phrase is
+  2^(-hours since practice / half-life). A right answer doubles the half-life and a wrong
+  one halves it (12 hours to start, between 1 hour and a year). Only first answers count;
+  a phrase said from memory counts as right when every word was heard before the learner
+  asked to hear the answer.
+- **Daily review.** When phrases drop below a 75% chance of recall, a "Daily review" card
+  appears on the Learn tab with up to 8 of them, weakest first. The review mixes listening,
+  reading and saying from memory; the motari's lines are always listening.
+- Code: `api/src/practice/` (memory model, storage, routes) and `app/src/app/review.tsx`.
 
 ## Sources
 
