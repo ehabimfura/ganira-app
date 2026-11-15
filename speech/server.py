@@ -27,6 +27,23 @@ MAX_BYTES = 2 * 1024 * 1024
 log = logging.getLogger("speech")
 
 
+def memory_report() -> str:
+    """This process's memory and the machine's free memory, from Linux's /proc (blank elsewhere)."""
+    try:
+        status = Path("/proc/self/status").read_text()
+        info = Path("/proc/meminfo").read_text()
+        load = Path("/proc/loadavg").read_text().split()[0]
+    except OSError:
+        return "memory unknown"
+    def kb(text: str, field: str) -> int:
+        line = next(l for l in text.splitlines() if l.startswith(field + ":"))
+        return int(line.split()[1]) // 1024
+    return (
+        f"process {kb(status, 'VmRSS')} MB, machine free {kb(info, 'MemAvailable')} of {kb(info, 'MemTotal')} MB, "
+        f"swap used {kb(info, 'SwapTotal') - kb(info, 'SwapFree')} MB, load {load}"
+    )
+
+
 def make_handler(transcriber: Transcriber, key: str | None = None):
     # One transcription at a time: on a one-core server, checks running together all slow
     # down and can all miss the API's deadline. Waiting in line keeps each one fast.
@@ -68,7 +85,13 @@ def make_handler(transcriber: Transcriber, key: str | None = None):
                 with one_at_a_time:
                     started = time.perf_counter()
                     text = transcriber.transcribe(audio)
-                log.info("Transcribed %.1f s of audio in %d ms", len(audio) / 16000, (time.perf_counter() - started) * 1000)
+                log.info(
+                    "Transcribed %.1f s of audio in %d ms (%s); %s",
+                    len(audio) / 16000,
+                    (time.perf_counter() - started) * 1000,
+                    getattr(transcriber, "last_timing", ""),
+                    memory_report(),
+                )
                 self._send(200, {"text": text})
             except Exception:  # noqa: BLE001 - log everything, tell the API only that it failed
                 log.exception("Transcription failed")

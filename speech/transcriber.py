@@ -6,6 +6,7 @@ Digital Umuganda. Licence CC BY 4.0, credited on the app's Credits screen.
 """
 
 import io
+import time
 from pathlib import Path
 
 import av
@@ -78,6 +79,7 @@ class Transcriber:
         self.session = ort.InferenceSession(str(model_dir / "model.int8.onnx"), providers=["CPUExecutionProvider"])
         # The feature extractor the model was trained with (log-mel, normalised, 2 frames stacked).
         self.features = SeamlessM4TFeatureExtractor()
+        self.last_timing = ""
         self.vocab = {}
         for line in (model_dir / "vocab.txt").read_text(encoding="utf-8").splitlines():
             token, index = line.rsplit(" ", 1)
@@ -85,11 +87,15 @@ class Transcriber:
 
     def transcribe(self, audio: np.ndarray) -> str:
         audio = trim_silence(audio)
+        started = time.perf_counter()
         features = self.features(audio, sampling_rate=SAMPLE_RATE, return_tensors="np")["input_features"]
+        featured = time.perf_counter()
         logprobs, lengths = self.session.run(
             None,
             {"features": features.astype(np.float32), "features_lens": np.array([features.shape[1]], dtype=np.int64)},
         )
+        done = time.perf_counter()
+        self.last_timing = f"features {(featured - started) * 1000:.0f} ms, model {(done - featured) * 1000:.0f} ms"
         return self._greedy_ctc(logprobs[0][: lengths[0]].argmax(axis=-1))
 
     def _greedy_ctc(self, ids: np.ndarray) -> str:
