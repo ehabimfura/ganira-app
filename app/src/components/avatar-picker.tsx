@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Avatar } from '@/components/avatar';
 import { AVATARS } from '@/lib/avatars';
-import { colors, font, fonts, radius, space } from '@/theme';
+import { colors, font, fonts, space } from '@/theme';
 
 export function AvatarPicker({ value, onChange }: { value: string; onChange: (id: string) => void }) {
   return (
@@ -11,12 +12,12 @@ export function AvatarPicker({ value, onChange }: { value: string; onChange: (id
           <Pressable
             key={a.id}
             accessibilityRole="button"
-            accessibilityLabel={a.id}
+            accessibilityLabel={`Avatar ${AVATARS.indexOf(a) + 1}`}
             accessibilityState={{ selected: value === a.id }}
             onPress={() => onChange(a.id)}
             style={[styles.avatar, value === a.id && styles.selected]}
           >
-            <Text style={styles.emoji}>{a.emoji}</Text>
+            <Avatar id={a.id} size={52} />
           </Pressable>
         ))}
       </View>
@@ -29,9 +30,9 @@ const styles = StyleSheet.create({
   label: { fontSize: font.label, fontFamily: fonts.semibold, color: colors.text },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
   avatar: {
-    width: 56,
-    height: 56,
-    borderRadius: radius,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.surface,
@@ -39,5 +40,4 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
   selected: { borderColor: colors.primary },
-  emoji: { fontSize: 30, fontFamily: fonts.regular },
 });

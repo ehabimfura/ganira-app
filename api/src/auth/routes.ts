@@ -1,6 +1,7 @@
 import { Router, type Response } from "express";
 import type { ResultSetHeader, RowDataPacket } from "mysql2/promise";
 import { z } from "zod";
+import { LESSON_IDS } from "../lessons/catalog.js";
 import type { Database } from "../db.js";
 import { ADULT_PATH, learnerOnboarding } from "../onboarding.js";
 import { isAdult } from "./age.js";
@@ -56,6 +57,12 @@ async function createSession(db: Database, accountId: number, activeLearnerId: n
     [accountId, activeLearnerId, hashToken(token), sessionExpiry()],
   );
   return token;
+}
+
+// Where a level sits on the path; ids no longer on the path go last.
+function pathPosition(id: string): number {
+  const index = (LESSON_IDS as readonly string[]).indexOf(id);
+  return index === -1 ? LESSON_IDS.length : index;
 }
 
 export function authRoutes(db: Database) {
@@ -163,11 +170,15 @@ export function authRoutes(db: Database) {
     const [progress] = await db.pool.query<RowDataPacket[]>(
       `SELECT p.learner_id, p.lesson_id
          FROM lesson_progress p JOIN learners l ON l.id = p.learner_id
-        WHERE l.account_id = ? ORDER BY p.completed_at, p.lesson_id`,
+        WHERE l.account_id = ?`,
       [session.accountId],
     );
+    // In path order, so two levels finished in the same second still come out right.
     const completedBy = (learnerId: number) =>
-      progress.filter((p) => p.learner_id === learnerId).map((p) => p.lesson_id as string);
+      progress
+        .filter((p) => p.learner_id === learnerId)
+        .map((p) => p.lesson_id as string)
+        .sort((a, b) => pathPosition(a) - pathPosition(b));
     res.json({
       account: accounts[0],
       profiles: learners.map((l) => ({

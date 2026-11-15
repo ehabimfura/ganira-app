@@ -10,6 +10,7 @@ import hmac
 import json
 import logging
 import os
+import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
@@ -59,7 +60,10 @@ def make_handler(transcriber: Transcriber, key: str | None = None):
                 self._send(400, {"error": "BAD_AUDIO"})
                 return
             try:
-                self._send(200, {"text": transcriber.transcribe(audio)})
+                started = time.perf_counter()
+                text = transcriber.transcribe(audio)
+                log.info("Transcribed %.1f s of audio in %d ms", len(audio) / 16000, (time.perf_counter() - started) * 1000)
+                self._send(200, {"text": text})
             except Exception:  # noqa: BLE001 - log everything, tell the API only that it failed
                 log.exception("Transcription failed")
                 self._send(500, {"error": "TRANSCRIBE_FAILED"})

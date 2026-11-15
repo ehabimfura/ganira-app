@@ -1,5 +1,9 @@
-import { DMSans_400Regular, DMSans_500Medium, DMSans_600SemiBold, DMSans_700Bold } from '@expo-google-fonts/dm-sans';
-import { PlaywriteUSTrad_400Regular } from '@expo-google-fonts/playwrite-us-trad';
+import {
+  OpenSans_400Regular,
+  OpenSans_500Medium,
+  OpenSans_600SemiBold,
+  OpenSans_700Bold,
+} from '@expo-google-fonts/open-sans';
 import { setAudioModeAsync } from 'expo-audio';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
@@ -12,13 +16,15 @@ import { colors } from '@/theme';
 
 function RootStack() {
   const { status } = useSession();
-  // The Matcha theme's fonts. If they fail to load, the app carries on with the system font.
+  // Open Sans for text, Satoshi for headings. If they fail to load, the app carries on with the system font.
   const [fontsLoaded, fontError] = useFonts({
-    DMSans_400Regular,
-    DMSans_500Medium,
-    DMSans_600SemiBold,
-    DMSans_700Bold,
-    PlaywriteUSTrad_400Regular,
+    OpenSans_400Regular,
+    OpenSans_500Medium,
+    OpenSans_600SemiBold,
+    OpenSans_700Bold,
+    'Satoshi-Medium': require('../../assets/fonts/satoshi/Satoshi-Medium.ttf'),
+    'Satoshi-Bold': require('../../assets/fonts/satoshi/Satoshi-Bold.ttf'),
+    'Satoshi-Black': require('../../assets/fonts/satoshi/Satoshi-Black.ttf'),
   });
 
   if (status === 'loading' || (!fontsLoaded && !fontError)) {
@@ -57,10 +63,11 @@ function RootStack() {
       </Stack.Protected>
       <Stack.Protected guard={signedIn}>
         <Stack.Screen name="home" options={{ headerShown: false }} />
+        <Stack.Screen name="(main)" options={{ headerShown: false }} />
         <Stack.Screen name="add-child" />
         <Stack.Screen name="pin" />
         <Stack.Screen name="parent-unlock" />
-        <Stack.Screen name="lesson/[id]" />
+        <Stack.Screen name="lesson/[id]" options={{ headerShown: false, gestureEnabled: false }} />
       </Stack.Protected>
     </Stack>
   );

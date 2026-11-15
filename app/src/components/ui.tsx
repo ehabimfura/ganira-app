@@ -1,3 +1,5 @@
+import type { LucideIcon } from 'lucide-react-native';
+import { Check } from 'lucide-react-native';
 import type { ReactNode } from 'react';
 import {
   ActivityIndicator,
@@ -12,7 +14,8 @@ import {
   type TextInputProps,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { colors, font, fonts, radius, space } from '@/theme';
+import { haptics } from '@/lib/haptics';
+import { colors, font, fonts, icon as iconSize, radius, space } from '@/theme';
 
 export function Screen({ children }: { children: ReactNode }) {
   return (
@@ -43,7 +46,7 @@ export function Checkbox({ label, checked, onChange }: { label: string; checked:
       style={styles.checkRow}
     >
       <View style={[styles.checkBox, checked && styles.checkBoxOn]}>
-        {checked ? <Text style={styles.checkMark}>✓</Text> : null}
+        {checked ? <Check size={18} color={colors.primaryText} strokeWidth={3} /> : null}
       </View>
       <Text style={styles.checkLabel}>{label}</Text>
     </Pressable>
@@ -67,63 +70,139 @@ export function ErrorText({ message }: { message: string | null }) {
   );
 }
 
+type ButtonVariant = 'primary' | 'secondary' | 'success' | 'danger';
+
+const BUTTON_COLORS: Record<ButtonVariant, { face: string; edge: string; text: string; border?: string }> = {
+  primary: { face: colors.primary, edge: colors.primaryEdge, text: colors.primaryText },
+  secondary: { face: colors.surface, edge: colors.borderStrong, text: colors.primary, border: colors.borderStrong },
+  success: { face: colors.success, edge: '#2A5400', text: colors.primaryText },
+  danger: { face: colors.error, edge: '#8F0000', text: colors.primaryText },
+};
+
+// A raised button with a darker lip underneath, like Duolingo's; it sinks when pressed.
 export function Button({
   label,
   onPress,
   variant = 'primary',
+  icon: Icon,
   busy = false,
   disabled = false,
 }: {
   label: string;
   onPress: () => void;
-  variant?: 'primary' | 'secondary';
+  variant?: ButtonVariant;
+  icon?: LucideIcon;
   busy?: boolean;
   disabled?: boolean;
 }) {
-  const primary = variant === 'primary';
+  const c = BUTTON_COLORS[variant];
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityLabel={label}
       accessibilityState={{ disabled: disabled || busy }}
       disabled={disabled || busy}
-      onPress={onPress}
+      onPress={() => {
+        haptics.tap();
+        onPress();
+      }}
       style={({ pressed }) => [
         styles.button,
-        primary ? styles.primary : styles.secondary,
+        { backgroundColor: c.face, borderBottomColor: c.edge },
+        c.border ? { borderColor: c.border, borderWidth: 2, borderBottomWidth: 4 } : null,
         (disabled || busy) && styles.disabled,
-        pressed && styles.pressed,
+        pressed && styles.buttonPressed,
       ]}
     >
       {busy ? (
-        <ActivityIndicator color={primary ? colors.primaryText : colors.primary} />
+        <ActivityIndicator color={c.text} />
       ) : (
-        <Text style={[styles.buttonText, { color: primary ? colors.primaryText : colors.primary }]}>{label}</Text>
+        <View style={styles.buttonRow}>
+          {Icon ? <Icon size={iconSize.size} color={c.text} strokeWidth={iconSize.stroke} /> : null}
+          <Text style={[styles.buttonText, { color: c.text }]}>{label}</Text>
+        </View>
       )}
     </Pressable>
   );
 }
 
-// One tappable option in a list of answers, e.g. a level or a daily goal.
+// A round icon-only button, e.g. "close" or "play again". The label is for screen readers.
+export function IconButton({
+  icon: Icon,
+  label,
+  onPress,
+  size = iconSize.size,
+  color = colors.muted,
+}: {
+  icon: LucideIcon;
+  label: string;
+  onPress: () => void;
+  size?: number;
+  color?: string;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      hitSlop={12}
+      onPress={() => {
+        haptics.tap();
+        onPress();
+      }}
+      style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}
+    >
+      <Icon size={size} color={color} strokeWidth={iconSize.stroke} />
+    </Pressable>
+  );
+}
+
+export type ChoiceStatus = 'none' | 'selected' | 'correct' | 'wrong';
+
+// One tappable option in a list of answers, e.g. a level, a daily goal or a quiz answer.
+// After an answer is checked, the right option turns green and a wrong pick turns red.
 export function Choice({
   label,
   hint,
   selected,
+  status,
+  disabled = false,
   onPress,
 }: {
   label: string;
   hint?: string;
-  selected: boolean;
+  selected?: boolean;
+  status?: ChoiceStatus;
+  disabled?: boolean;
   onPress: () => void;
 }) {
+  const state: ChoiceStatus = status ?? (selected ? 'selected' : 'none');
   return (
     <Pressable
       accessibilityRole="radio"
-      accessibilityState={{ checked: selected }}
-      accessibilityLabel={label}
-      onPress={onPress}
-      style={({ pressed }) => [styles.choice, selected && styles.choiceSelected, pressed && styles.pressed]}
+      accessibilityState={{ checked: state !== 'none', disabled }}
+      accessibilityLabel={state === 'correct' ? `${label}, right answer` : state === 'wrong' ? `${label}, wrong answer` : label}
+      disabled={disabled}
+      onPress={() => {
+        haptics.tap();
+        onPress();
+      }}
+      style={({ pressed }) => [
+        styles.choice,
+        state === 'selected' && styles.choiceSelected,
+        state === 'correct' && styles.choiceCorrect,
+        state === 'wrong' && styles.choiceWrong,
+        pressed && styles.choicePressed,
+      ]}
     >
-      <Text style={styles.choiceLabel}>{label}</Text>
+      <Text
+        style={[
+          styles.choiceLabel,
+          state === 'correct' && { color: colors.success },
+          state === 'wrong' && { color: colors.error },
+        ]}
+      >
+        {label}
+      </Text>
       {hint ? <Text style={styles.choiceHint}>{hint}</Text> : null}
     </Pressable>
   );
@@ -161,28 +240,38 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   checkBoxOn: { backgroundColor: colors.primary, borderColor: colors.primary },
-  checkMark: { color: colors.primaryText, fontFamily: fonts.bold },
   checkLabel: { flex: 1, fontSize: font.body, fontFamily: fonts.regular, color: colors.text },
-  // Headings use the theme's handwriting face; it runs tall, so it gets extra line height.
-  title: { fontSize: font.title, fontFamily: fonts.heading, color: colors.text, lineHeight: font.title * 1.6 },
+  title: { fontSize: font.title, fontFamily: fonts.heading, color: colors.text, lineHeight: font.title * 1.2 },
   body: { fontSize: font.body, fontFamily: fonts.regular, color: colors.muted, lineHeight: 22 },
   error: { fontSize: font.label, fontFamily: fonts.regular, color: colors.error },
-  // 48 px: Astryx's large element (44 px) plus room for a finger.
-  button: { minHeight: 48, borderRadius: radius, alignItems: 'center', justifyContent: 'center', paddingHorizontal: space.md },
-  primary: { backgroundColor: colors.primary },
-  secondary: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.borderStrong },
+  // 50 px tall plus a 4 px lip: Astryx's large element (44 px) with room for a finger.
+  button: {
+    minHeight: 54,
+    borderRadius: radius + 2,
+    borderBottomWidth: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: space.md,
+  },
+  buttonPressed: { borderBottomWidth: 0, marginTop: 4, minHeight: 50 },
+  buttonRow: { flexDirection: 'row', alignItems: 'center', gap: space.xs },
   disabled: { opacity: 0.5 },
-  pressed: { opacity: 0.8 },
-  buttonText: { fontSize: font.body, fontFamily: fonts.semibold },
+  pressed: { opacity: 0.7 },
+  buttonText: { fontSize: font.body, fontFamily: fonts.bold, letterSpacing: 0.3 },
+  iconButton: { padding: space.xs, borderRadius: 999 },
   choice: {
     borderWidth: 2,
+    borderBottomWidth: 4,
     borderColor: colors.border,
     backgroundColor: colors.surface,
-    borderRadius: radius,
+    borderRadius: radius + 2,
     padding: space.md,
     gap: space.xs,
   },
+  choicePressed: { borderBottomWidth: 2, marginTop: 2 },
   choiceSelected: { borderColor: colors.primary, backgroundColor: colors.selected },
+  choiceCorrect: { borderColor: colors.success, backgroundColor: colors.successSoft },
+  choiceWrong: { borderColor: colors.error, backgroundColor: colors.errorSoft },
   choiceLabel: { fontSize: font.body, fontFamily: fonts.semibold, color: colors.text },
   choiceHint: { fontSize: font.label, fontFamily: fonts.regular, color: colors.muted },
   field: { gap: space.xs },

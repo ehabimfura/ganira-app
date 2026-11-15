@@ -1,16 +1,17 @@
 import { Redirect, router } from 'expo-router';
+import { Lock, LogOut, UserPlus } from 'lucide-react-native';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { Body, Button, ErrorText, Screen, Title } from '@/components/ui';
-import { isUnlocked, LESSONS, MODULE_TITLE } from '@/content/module1';
+import { Avatar } from '@/components/avatar';
+import { Button, ErrorText, Screen, Title } from '@/components/ui';
 import { apiRequest, messageFor } from '@/lib/api';
-import { avatarEmoji } from '@/lib/avatars';
+import { haptics } from '@/lib/haptics';
 import { useSession, type Profile } from '@/lib/session';
-import { colors, font, fonts, radius, radiusLarge, shadow, space } from '@/theme';
+import { colors, font, fonts, radiusLarge, shadow, space } from '@/theme';
 
-// One Home, three situations:
+// Home only decides where a signed-in account belongs:
 //   parent with no child open -> profile picker (or "Add your child" if there are none)
-//   adult learner, or a child's profile open -> their lesson path
+//   adult learner, or a child's profile open -> the Learn tab
 export default function Home() {
   const { me } = useSession();
   if (!me) return null;
@@ -20,9 +21,7 @@ export default function Home() {
     if (me.profiles.length === 0) return <Redirect href="/add-child" />;
     return <ProfilePicker />;
   }
-  const active = me.profiles.find((p) => p.id === me.activeProfileId);
-  if (!active) return null;
-  return <LessonHome profile={active} isChild={isParent} />;
+  return <Redirect href="/learn" />;
 }
 
 function ProfilePicker() {
@@ -51,72 +50,25 @@ function ProfilePicker() {
           <Pressable
             key={profile.id}
             accessibilityRole="button"
-            accessibilityLabel={profile.nickname}
-            onPress={() => open(profile)}
+            accessibilityLabel={profile.hasPin ? `${profile.nickname}, has a PIN` : profile.nickname}
+            onPress={() => {
+              haptics.tap();
+              open(profile);
+            }}
             style={({ pressed }) => [styles.tile, pressed && styles.pressed]}
           >
-            <Text style={styles.tileAvatar}>{avatarEmoji(profile.avatar)}</Text>
+            <Avatar id={profile.avatar} size={72} />
             <Text style={styles.tileName}>{profile.nickname}</Text>
-            {profile.hasPin ? <Text style={styles.lock}>🔒</Text> : null}
+            {profile.hasPin ? <Lock size={14} color={colors.muted} strokeWidth={2.5} /> : null}
           </Pressable>
         ))}
       </View>
       <ErrorText message={error} />
       <View style={styles.flex} />
       {me.profiles.length < 6 && (
-        <Button label="+ Add child" variant="secondary" onPress={() => router.push('/add-child')} />
+        <Button label="Add child" icon={UserPlus} variant="secondary" onPress={() => router.push('/add-child')} />
       )}
-      <Button label="Sign out" variant="secondary" onPress={signOut} />
-    </Screen>
-  );
-}
-
-function LessonHome({ profile, isChild }: { profile: Profile; isChild: boolean }) {
-  const { signOut } = useSession();
-
-  return (
-    <Screen>
-      <View style={styles.header}>
-        <Text style={styles.avatar}>{avatarEmoji(profile.avatar)}</Text>
-        <View style={styles.flex}>
-          <Title>Muraho, {profile.nickname}!</Title>
-          <Body>Daily goal: {profile.dailyGoalMinutes} minutes</Body>
-        </View>
-        {isChild && (
-          <Pressable accessibilityRole="button" accessibilityLabel="Parent" onPress={() => router.push('/parent-unlock')}>
-            <Text style={styles.parent}>Parent</Text>
-          </Pressable>
-        )}
-      </View>
-
-      <Text style={styles.module}>{MODULE_TITLE}</Text>
-      {LESSONS.map((lesson, index) => {
-        const done = profile.completedLessons.includes(lesson.id);
-        const open = isUnlocked(index, profile.completedLessons);
-        return (
-          <Pressable
-            key={lesson.id}
-            accessibilityRole="button"
-            accessibilityLabel={`Lesson ${index + 1}: ${lesson.title}`}
-            accessibilityState={{ disabled: !open }}
-            disabled={!open}
-            onPress={() => router.push({ pathname: '/lesson/[id]', params: { id: lesson.id } })}
-            style={({ pressed }) => [styles.lesson, !open && styles.locked, pressed && styles.pressed]}
-          >
-            <Text style={styles.lessonNumber}>{index + 1}</Text>
-            <Text style={styles.lessonTitle}>{lesson.title}</Text>
-            <Text style={styles.lessonState}>{done ? '✓' : open ? 'Start' : '🔒'}</Text>
-          </Pressable>
-        );
-      })}
-
-      <View style={styles.flex} />
-      {!isChild && (
-        <>
-          <Button label="Credits" variant="secondary" onPress={() => router.push('/credits')} />
-          <Button label="Sign out" variant="secondary" onPress={signOut} />
-        </>
-      )}
+      <Button label="Sign out" icon={LogOut} variant="secondary" onPress={signOut} />
     </Screen>
   );
 }
@@ -130,29 +82,12 @@ const styles = StyleSheet.create({
     padding: space.md,
     borderRadius: radiusLarge,
     backgroundColor: colors.surface,
+    borderWidth: 2,
+    borderBottomWidth: 4,
+    borderColor: colors.border,
     ...shadow,
     alignItems: 'center',
     gap: space.xs,
   },
-  tileAvatar: { fontSize: 48, fontFamily: fonts.regular },
-  tileName: { fontSize: font.body, fontFamily: fonts.bold, color: colors.text },
-  lock: { fontSize: font.label, fontFamily: fonts.regular },
-  header: { flexDirection: 'row', alignItems: 'center', gap: space.md, marginTop: space.md },
-  avatar: { fontSize: 40, fontFamily: fonts.regular, backgroundColor: colors.surface, borderRadius: radius, padding: space.sm },
-  parent: { color: colors.primary, fontFamily: fonts.semibold, fontSize: font.label, padding: space.sm },
-  module: { fontSize: font.label, fontFamily: fonts.bold, color: colors.muted, textTransform: 'uppercase' },
-  lesson: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.md,
-    padding: space.md,
-    borderRadius: radiusLarge,
-    backgroundColor: colors.surface,
-    ...shadow,
-  },
-  // A locked lesson sits flat on the page, with no card or shadow.
-  locked: { backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.border, shadowOpacity: 0, elevation: 0 },
-  lessonNumber: { fontSize: font.title, fontFamily: fonts.bold, color: colors.primary, width: 32 },
-  lessonTitle: { flex: 1, fontSize: font.body, fontFamily: fonts.semibold, color: colors.text },
-  lessonState: { fontSize: font.label, fontFamily: fonts.regular, color: colors.muted },
+  tileName: { fontSize: font.body, fontFamily: fonts.headingBold, color: colors.text },
 });

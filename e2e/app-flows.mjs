@@ -48,15 +48,22 @@ const shown = async (name) => (await page.getByRole('button', { name, exact: tru
 const isLocked = async (name) =>
   (await page.getByRole('button', { name, exact: true }).filter({ visible: true }).first().getAttribute('aria-disabled')) === 'true';
 
-// Records for 3 seconds through the fake microphone and waits for the speech check's answer.
+// Records through the fake microphone and waits for the speech check's answer. Recording
+// stops by itself after the word and a short silence; Stop is tapped if it hasn't yet.
 async function speak() {
-  await tap('🎙️ Speak');
-  await page.waitForTimeout(3000);
-  await tap('■ Stop');
-  await page.getByRole('button', { name: '🎙️ Try again', exact: true }).filter({ visible: true }).first().waitFor({ timeout: 15000 });
+  await tap('Speak');
+  const again = page.getByRole('button', { name: 'Try again', exact: true }).filter({ visible: true }).first();
+  await again.waitFor({ timeout: 3500 }).catch(async () => {
+    if (await shown('Stop')) await tap('Stop');
+  });
+  await again.waitFor({ timeout: 20000 });
 }
 
-const answerShown = async () => (await page.getByRole('radio').filter({ visible: true }).count()) > 0;
+const enabled = async (name) => {
+  const button = page.getByRole('button', { name, exact: true }).filter({ visible: true }).first();
+  return (await button.count()) > 0 && (await button.getAttribute('aria-disabled')) !== 'true';
+};
+const visibleText = async (t) => (await page.getByText(t, { exact: false }).filter({ visible: true }).count()) > 0;
 
 // Speaks and expects every word green. Chrome's fake microphone sometimes sends silence on
 // the very first recording of a fresh browser, so one "Try again" is allowed, as a learner would.
@@ -64,28 +71,62 @@ async function speakUntilHeard(label) {
   const heard = page.getByLabel(label).filter({ visible: true }).first();
   await speak();
   if (await heard.isVisible()) return;
-  await tap('🎙️ Try again');
-  await page.waitForTimeout(3000);
-  await tap('■ Stop');
-  await heard.waitFor({ timeout: 15000 });
+  await page.getByRole('button', { name: 'Try again', exact: true }).filter({ visible: true }).first().click();
+  const again = page.getByRole('button', { name: 'Try again', exact: true }).filter({ visible: true }).first();
+  await again.waitFor({ timeout: 3500 }).catch(async () => {
+    if (await shown('Stop')) await tap('Stop');
+  });
+  await heard.waitFor({ timeout: 20000 });
 }
 
-// Lessons 1-4: start, then learn, listen, recall and talk through every step to the end.
+// Match pairs by trying each meaning for each phrase; wrong tries flash red and are allowed.
+async function solvePairs() {
+  for (let k = 0; k < 6; k++) {
+    const kin = page.getByTestId(`pair-kin-${k}`).filter({ visible: true });
+    if (!(await kin.count())) break;
+    for (let e = 0; e < 6 && (await kin.getAttribute('aria-disabled')) !== 'true'; e++) {
+      const en = page.getByTestId(`pair-en-${e}`).filter({ visible: true });
+      if (!(await en.count())) break;
+      if ((await en.getAttribute('aria-disabled')) === 'true') continue;
+      await kin.click();
+      await en.click();
+      await page.waitForTimeout(650);
+    }
+  }
+}
+
+// Plays a lesson or practice level through to its "complete" screen, answering every
+// exercise (sometimes wrongly, which brings the exercise back once at the end).
 // With `stopAt`, stops as soon as that text is on screen instead.
-async function finishStepLesson(stopAt) {
-  for (let i = 0; i < 150; i++) {
-    if (stopAt && (await page.getByText(stopAt, { exact: false }).filter({ visible: true }).count())) return;
-    if (await shown('Back to lessons')) return;
+async function finishLevel(stopAt) {
+  for (let i = 0; i < 400; i++) {
+    if (stopAt && (await visibleText(stopAt))) return;
+    if (await visibleText(' complete')) return;
     if (await shown('Start')) await tap('Start');
+    else if (await enabled('Check')) await tap('Check');
+    else if (await enabled('Continue')) await tap('Continue');
     else if (await shown('Finish')) await tap('Finish');
     else if (await shown('Next')) await tap('Next');
-    else if (await shown('🎙️ Speak')) await speak();
-    else if (await shown('🔊 Listen')) await tap('🔊 Listen');
-    else if (await answerShown()) await page.getByRole('radio').filter({ visible: true }).first().click();
-    else await page.waitForTimeout(200);
+    else if (await shown('Speak')) await speak();
+    else if (await shown('Listen')) await tap('Listen');
+    else if (await page.getByTestId('pair-kin-0').filter({ visible: true }).count()) await solvePairs();
+    else if (await page.getByTestId('tile-0').filter({ visible: true }).count()) {
+      // Tap every bank word in order; the answer is checked either way.
+      for (let t = 0; t < 8; t++) {
+        const tile = page.getByTestId(`tile-${t}`).filter({ visible: true }).last();
+        if (await tile.count()) await tile.click();
+      }
+    } else if (await page.getByRole('radio').filter({ visible: true }).count()) {
+      await page.getByRole('radio').filter({ visible: true }).first().click();
+    } else await page.waitForTimeout(200);
   }
-  throw new Error('the lesson never reached its end');
+  throw new Error('the level never reached its end');
 }
+
+const backToPath = async (name) => {
+  await tap('Continue');
+  await text(`Muraho, ${name}!`);
+};
 
 await check('welcome screen shows on first launch', async () => {
   await page.goto(BASE);
@@ -135,7 +176,7 @@ await check('learner answers level and daily goal', async () => {
 await check('first lesson: listen, then speak; the speech check hears "Muraho" before sign-up', async () => {
   await text('Your first word');
   if (await page.getByRole('button', { name: 'Continue' }).count()) throw new Error('Continue shown before listening');
-  await tap('🔊 Listen');
+  await tap('Listen');
   await text('Now say it out loud!');
   if (await page.getByRole('button', { name: 'I said it' }).count()) throw new Error('"I said it" is still there');
   if (await shown('Continue')) throw new Error('Continue shown before speaking');
@@ -143,11 +184,13 @@ await check('first lesson: listen, then speak; the speech check hears "Muraho" b
   await page.screenshot({ path: `${SHOTS}5-first-lesson.png` });
   await tap('Continue');
   await text('Save your progress');
+  // Someone with an account already can sign in from here.
+  await page.getByRole('button', { name: 'I already have an account' }).filter({ visible: true }).first().waitFor();
 });
 
 await check('learner sign-up: short password is caught, then account is created', async () => {
   await fill('Nickname', 'Amina');
-  await tap('leopard');
+  await tap('Avatar 6');
   await fill('Email', `amina${stamp}@example.com`);
   await fill('Username', `Amina_${stamp}`);
   await fill('Password', 'short');
@@ -157,8 +200,7 @@ await check('learner sign-up: short password is caught, then account is created'
   await fill('Password', 'correct horse');
   await tap('Create account');
   await text('Muraho, Amina!');
-  await text('Daily goal: 15 minutes');
-  await page.getByRole('button', { name: 'Lesson 1: Greetings' }).waitFor();
+  await page.getByRole('button', { name: 'Lesson 1: Hello' }).waitFor();
   await page.screenshot({ path: `${SHOTS}7-home-learner.png` });
 });
 
@@ -167,7 +209,10 @@ await check('still signed in after reopening the app', async () => {
   await text('Muraho, Amina!');
 });
 
-await check('sign out returns to Welcome', async () => {
+await check('the Profile tab shows the daily goal and signs out to Welcome', async () => {
+  await page.getByText('Profile', { exact: true }).filter({ visible: true }).last().click();
+  await text('15 min');
+  await page.screenshot({ path: `${SHOTS}7b-profile.png` });
   await tap('Sign out');
   await text('I already have an account');
 });
@@ -225,7 +270,7 @@ await check('new parent is asked to add a child; consent is required', async () 
 });
 
 await check('a PIN-locked child needs the right PIN', async () => {
-  await tap('Ineza');
+  await tap('Ineza, has a PIN');
   await text("Ineza's PIN");
   await fill('PIN', '0000');
   await tap('Open');
@@ -233,79 +278,96 @@ await check('a PIN-locked child needs the right PIN', async () => {
   await fill('PIN', '2468');
   await tap('Open');
   await text('Muraho, Ineza!');
-  await text('Daily goal: 5 minutes');
   await page.screenshot({ path: `${SHOTS}10-child-home.png` });
 });
 
-await check('a child has no sign-out; finishing lesson 1 opens lesson 2 only', async () => {
-  if (await page.getByRole('button', { name: 'Sign out' }).count()) throw new Error('Sign out shown in child mode');
-  if (!(await isLocked('Lesson 2: Calling a moto'))) throw new Error('lesson 2 open before lesson 1 was done');
-  await tap('Lesson 1: Greetings');
+await check('a child has no sign-out; finishing level 1 opens level 2 only', async () => {
+  await page.getByText('Profile', { exact: true }).filter({ visible: true }).last().click();
+  await text('Switch profile');
+  if (await shown('Sign out')) throw new Error('Sign out shown in child mode');
+  await page.getByText('Learn', { exact: true }).filter({ visible: true }).last().click();
+  if (!(await isLocked('Lesson 2: Hi and thanks'))) throw new Error('level 2 open before level 1 was done');
+  await tap('Lesson 1: Hello');
   await text('By the end you can:');
   await text('Greet anyone at any time of day.');
   await page.screenshot({ path: `${SHOTS}11a-lesson-goal.png` });
   await tap('Start');
-  await text('1. Greetings');
-  await text('Muraho');
-  if (await shown('Next')) throw new Error('Next shown before listening');
-  await tap('🔊 Listen');
-  await text('Now say it out loud!');
-  if (await shown('Next')) throw new Error('Next shown before speaking');
+  await text('New phrase');
+  if (await shown('Continue')) throw new Error('Continue shown before speaking');
   await speakUntilHeard('Heard: 1 of 1 words');
-  await page.screenshot({ path: `${SHOTS}11-lesson-step.png` });
+  await page.screenshot({ path: `${SHOTS}11-introduce.png` });
+  await tap('Continue');
 
-  // Listen: a wrong pick shows the right meaning too.
-  await finishStepLesson('What does it mean?');
+  // Listen: a wrong pick turns red and the right meaning green, with the answer in the bar.
+  await text('What does this mean?');
   await page.getByRole('radio', { name: 'Thank you' }).click();
-  await page.getByRole('radio', { name: '✗ Thank you' }).waitFor();
-  await page.getByRole('radio', { name: '✓ Good morning' }).waitFor();
-  await page.screenshot({ path: `${SHOTS}11b-listen.png` });
-  await tap('Next');
+  await tap('Check');
+  await page.getByRole('radio', { name: 'Thank you, wrong answer' }).waitFor();
+  await page.getByRole('radio', { name: 'Hello, right answer' }).waitFor();
+  await text('Correct answer:');
+  await page.screenshot({ path: `${SHOTS}11b-listen-wrong.png` });
+  await tap('Continue');
 
-  // Recall: only the English shows until the learner has tried.
-  await text('How do you say');
+  // Quitting asks first; "Keep learning" stays in the lesson.
+  await tap('Quit lesson');
+  await text('Quit this lesson?');
+  await tap('Keep learning');
+
+  await finishLevel('Tap the matching pairs');
+  await page.screenshot({ path: `${SHOTS}11c-pairs.png` });
+  await finishLevel('Say this in Kinyarwanda');
   await text('“Hello”');
   if (await page.getByText('Muraho', { exact: true }).filter({ visible: true }).count()) throw new Error('answer shown before trying');
-  await page.screenshot({ path: `${SHOTS}11c-recall.png` });
-  await speakUntilHeard('Heard: 1 of 1 words');
-  await finishStepLesson();
-  await text('Lesson 1 complete');
+  await page.screenshot({ path: `${SHOTS}11d-recall.png` });
+  await finishLevel();
+  // The wrong listen answer came back at the end before the lesson could finish.
+  await text('Lesson complete');
   await text('Now you can:');
   await page.screenshot({ path: `${SHOTS}12-lesson-done.png` });
-  await tap('Back to lessons');
-  await text('Muraho, Ineza!');
-  if (await isLocked('Lesson 2: Calling a moto')) throw new Error('lesson 2 still locked');
-  if (!(await isLocked('Lesson 3: Where to?'))) throw new Error('lesson 3 open too early');
+  await backToPath('Ineza');
+  if (await isLocked('Lesson 2: Hi and thanks')) throw new Error('level 2 still locked');
+  if (!(await isLocked('Practice 3: Practice: greetings'))) throw new Error('level 3 open too early');
 });
 
-await check('lessons 2-4 teach the motari\'s words, then the ride ends with "vayo tugende"', async () => {
-  for (const name of ['Lesson 2: Calling a moto', 'Lesson 3: Where to?', 'Lesson 4: How much?']) {
+await check('levels 2-7 teach the ride, then the roleplay ends with "vayo tugende"', async () => {
+  const levels = [
+    'Lesson 2: Hi and thanks',
+    'Practice 3: Practice: greetings',
+    'Lesson 4: Calling a moto',
+    'Lesson 5: Where to?',
+    'Lesson 6: How much?',
+    'Practice 7: Practice: the ride',
+  ];
+  for (const name of levels) {
     await tap(name);
-    await finishStepLesson();
-    await tap('Back to lessons');
-    await text('Muraho, Ineza!');
+    if (name.endsWith('Where to?')) {
+      await finishLevel('Put the words in order');
+      await page.screenshot({ path: `${SHOTS}12b-build.png` });
+    }
+    await finishLevel();
+    await backToPath('Ineza');
   }
-  await tap('Lesson 5: The ride');
+  await tap('Roleplay 8: The ride');
   await tap('Start');
   await text('Greet the motari');
   await page.getByRole('radio', { name: 'Mwaramutse' }).click();
   await speak();
   await tap('Next');
   await text('Mota?');
-  await tap('🔊 Listen');
+  await tap('Listen');
   await speak();
   await tap('Next');
   // The motari answers with the greeting the learner chose.
   await page.getByLabel('Motari: Mwaramutse').filter({ visible: true }).first().waitFor({ timeout: 8000 });
   for (let i = 0; i < 3; i++) {
-    await tap('🔊 Listen');
+    await tap('Listen');
     await speak();
     await tap('Next');
   }
   await text('Ntacyo, vayo tugende.');
   // The last line must be on screen, above the Finish button, not just somewhere in the chat.
   const last = page.getByText('Ntacyo, vayo tugende.').filter({ visible: true }).first();
-  const finish = page.getByRole('button', { name: '🏍️ Finish' }).filter({ visible: true }).first();
+  const finish = page.getByRole('button', { name: 'Finish' }).filter({ visible: true }).first();
   for (let i = 0; ; i++) {
     const [line, button] = [await last.boundingBox(), await finish.boundingBox()];
     if (line && button && line.y + line.height <= button.y) break;
@@ -313,14 +375,15 @@ await check('lessons 2-4 teach the motari\'s words, then the ride ends with "vay
     await page.waitForTimeout(200);
   }
   await page.screenshot({ path: `${SHOTS}13-ride.png` });
-  await tap('🏍️ Finish');
-  await text('Lesson 5 complete');
-  await tap('Back to lessons');
-  await text('Muraho, Ineza!');
+  await tap('Finish');
+  await text('Roleplay complete');
+  await page.screenshot({ path: `${SHOTS}13b-celebration.png` });
+  await backToPath('Ineza');
 });
 
 await check("only the parent's password leaves the child's profile", async () => {
-  await tap('Parent');
+  await page.getByText('Profile', { exact: true }).filter({ visible: true }).last().click();
+  await tap('Switch profile');
   await fill('Parent password', 'wrong password');
   await tap('Continue');
   await text("That password isn't right");
@@ -330,7 +393,7 @@ await check("only the parent's password leaves the child's profile", async () =>
 });
 
 await check('a child without a PIN opens with one tap', async () => {
-  await tap('+ Add child');
+  await tap('Add child');
   await text('Add another child');
   await fill("Child's nickname", 'Ganza');
   await page.getByRole('radio', { name: '4-6' }).click();

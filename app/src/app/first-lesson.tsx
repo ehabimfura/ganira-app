@@ -1,6 +1,6 @@
 import { useAudioPlayer } from 'expo-audio';
-import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
+import { Volume2 } from 'lucide-react-native';
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Speak } from '@/components/speak';
@@ -18,7 +18,6 @@ export default function FirstLesson() {
   const [spoke, setSpoke] = useState(false);
 
   const listen = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     // A missing speaker or a blocked browser must never stop the lesson.
     try {
       voice.seekTo(0);
@@ -43,7 +42,7 @@ export default function FirstLesson() {
         <Text style={styles.meaning}>Hello</Text>
       </View>
 
-      <Button label="🔊 Listen" variant="secondary" onPress={listen} />
+      <Button label="Listen" icon={Volume2} variant="secondary" onPress={listen} />
 
       {heard && (
         <>
@@ -63,6 +62,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: space.sm,
   },
-  word: { fontSize: font.hero, fontFamily: fonts.bold, color: colors.text },
+  word: { fontSize: font.hero, fontFamily: fonts.heading, color: colors.text },
   meaning: { fontSize: font.body, fontFamily: fonts.regular, color: colors.muted },
 });

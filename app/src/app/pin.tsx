@@ -1,12 +1,12 @@
 import { useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { StyleSheet, Text } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { Avatar } from '@/components/avatar';
 import { Button, ErrorText, Field, Screen, Title } from '@/components/ui';
 import { apiRequest, messageFor } from '@/lib/api';
-import { avatarEmoji } from '@/lib/avatars';
 import { returnHome } from '@/lib/navigation';
 import { useSession } from '@/lib/session';
-import { font, fonts } from '@/theme';
+
 
 // Opens a PIN-locked child profile.
 export default function Pin() {
@@ -33,7 +33,11 @@ export default function Pin() {
 
   return (
     <Screen>
-      <Text style={styles.avatar}>{profile ? avatarEmoji(profile.avatar) : '🙂'}</Text>
+      {profile ? (
+        <View style={styles.avatar}>
+          <Avatar id={profile.avatar} size={88} />
+        </View>
+      ) : null}
       <Title>{profile ? `${profile.nickname}'s PIN` : 'PIN'}</Title>
       <Field
         label="PIN"
@@ -52,5 +56,5 @@ export default function Pin() {
 }
 
 const styles = StyleSheet.create({
-  avatar: { fontSize: font.hero, fontFamily: fonts.regular, textAlign: 'center' },
+  avatar: { alignItems: 'center' },
 });

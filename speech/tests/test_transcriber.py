@@ -9,7 +9,7 @@ import numpy as np
 SPEECH = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(SPEECH))
 
-from transcriber import AudioError, Transcriber, decode_audio  # noqa: E402
+from transcriber import AudioError, Transcriber, decode_audio, trim_silence  # noqa: E402
 
 AUDIO = SPEECH.parent / "app" / "assets" / "audio"
 MODEL = SPEECH / "model"
@@ -26,6 +26,22 @@ class DecodeAudioTest(unittest.TestCase):
             decode_audio(b"this is not a recording")
 
 
+class TrimSilenceTest(unittest.TestCase):
+    """Less audio means less work for the model, so silence around the speech is cut."""
+
+    def test_silence_before_and_after_speech_is_cut(self):
+        speech = decode_audio((AUDIO / "muraho.wav").read_bytes())
+        silence = np.zeros(16000 * 2, dtype=np.float32)
+        padded = np.concatenate([silence, speech, silence])
+        trimmed = trim_silence(padded)
+        self.assertLess(len(trimmed), len(speech) + 16000 * 0.6)
+        self.assertGreaterEqual(len(trimmed), int(len(speech) * 0.8))
+
+    def test_audio_with_no_speech_is_kept(self):
+        silence = np.zeros(16000, dtype=np.float32)
+        self.assertEqual(len(trim_silence(silence)), len(silence))
+
+
 @unittest.skipUnless((MODEL / "model.int8.onnx").exists(), "speech model not downloaded")
 class TranscriberTest(unittest.TestCase):
     @classmethod
@@ -40,6 +56,11 @@ class TranscriberTest(unittest.TestCase):
     def test_hears_muraho_in_the_lesson_voice(self):
         audio = decode_audio((AUDIO / "muraho.wav").read_bytes())
         self.assertEqual(self.transcriber.transcribe(audio), "muraho")
+
+    def test_still_hears_muraho_after_long_silences_are_cut(self):
+        speech = decode_audio((AUDIO / "muraho.wav").read_bytes())
+        silence = np.zeros(16000 * 3, dtype=np.float32)
+        self.assertEqual(self.transcriber.transcribe(np.concatenate([silence, speech, silence])), "muraho")
 
 
 if __name__ == "__main__":

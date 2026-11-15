@@ -44,3 +44,20 @@ The web app `ganira-speech-eh` runs `python server.py` with these App Settings:
 `SPEECH_HOST=0.0.0.0`, `SPEECH_PORT=8000`, `SPEECH_MODEL_DIR=/home/ganira-model`
 (persistent storage, so the model is downloaded only once) and `SPEECH_KEY`.
 The key is set in App Settings only, never in code.
+
+## Speed
+
+- The app records 16 kHz mono (what the model uses), so uploads are small, and it stops
+  recording by itself after 0.9 s of quiet.
+- `trim_silence` keeps 0.3 s before and 0.6 s after the speech. On the lesson clips with
+  1.5 s of silence added on each side it cut 63% of the audio, and the transcripts got
+  better (long silence made the model drop word endings: "mura" for "muraho").
+- The server logs how long each transcription takes ("Transcribed 1.4 s of audio in N ms").
+
+### Why not MFCC + DTW
+
+Comparing the learner's MFCCs with a stored native recording by dynamic time warping is
+very fast (3 ms per comparison), but it compares voices, not words. Tested on 15 Nov 2026
+with six lesson phrases said by four other voices, it picked the right phrase 14 times out
+of 26; it only matched reliably when the speaker sounded like the reference clip. It also
+can't say which words were heard, so it can't drive the green words. The speech model stays.

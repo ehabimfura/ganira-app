@@ -1,15 +1,13 @@
 import type { AudioSource } from 'expo-audio';
 
-// Module 1, "Taking a moto in Kigali". Lessons 1-4 each teach one step of the ride;
-// lesson 5 is the ride itself. The ids must match api/src/lessons/catalog.ts.
+// Unit 1, "Taking a moto in Kigali": eight levels on a path, the way Duolingo lays out
+// a unit (see docs/LESSON-DESIGN.md). Lessons teach a few phrases each, practice levels
+// mix earlier phrases again (spaced review), and the unit ends with the full ride.
+// The ids must match api/src/lessons/catalog.ts.
 //
-// Every lesson follows the same research-based shape (see docs/LESSON-DESIGN.md):
-//   goal   - what the learner will be able to do (a CEFR-style "can do")
-//   learn  - at most 4 new things: hear it, say it. Long phrases are built backward from the end.
-//   listen - the motari speaks; the learner picks what it means
-//   recall - only the English shows; the learner says it from memory (retrieval practice),
-//            including 1-2 phrases from earlier lessons (spaced review)
-//   talk   - a short exchange with the motari using the lesson's phrases
+// Inside a lesson, new phrases are met inside exercises ("learn by doing"): a phrase is
+// introduced (hear it, say it), then used straight away in varied exercises. Any
+// exercise answered wrongly comes back once at the end of the lesson.
 //
 // Every clip is approved by a native speaker. Learner lines are in voice B; the motari's
 // are voice-B takes lowered to a man's voice. A line without a clip shows as text only.
@@ -32,15 +30,27 @@ export type Turn =
   | { speaker: 'me'; choose: GreetingOption[] }
   | { speaker: 'motari'; greetingReply: true };
 
-export type Step =
-  | { kind: 'learn'; line: Line }
-  | { kind: 'listen'; line: Line; wrongMeanings: string[] }
+export type Exercise =
+  // A new phrase: hear it, then say it.
+  | { kind: 'introduce'; line: Line }
+  // Hear Kinyarwanda, pick the English meaning.
+  | { kind: 'listen'; line: Line; wrong: string[]; speaker?: 'motari' }
+  // See the English, pick the Kinyarwanda.
+  | { kind: 'read'; line: Line; wrong: Line[] }
+  // Match each Kinyarwanda phrase with its meaning.
+  | { kind: 'pairs'; lines: Line[] }
+  // Hear a phrase and put its words in order; `extra` are decoy words.
+  | { kind: 'build'; line: Line; extra: string[] }
+  // Only the English shows: say the Kinyarwanda from memory.
   | { kind: 'recall'; line: Line }
+  // A short exchange with the motari.
   | { kind: 'talk'; turns: Turn[] };
 
-export type Lesson =
-  | { id: string; title: string; goal: string; kind: 'steps'; steps: Step[] }
-  | { id: string; title: string; goal: string; kind: 'ride'; intro: string; turns: Turn[] };
+export type LevelKind = 'lesson' | 'practice' | 'roleplay';
+
+export type Level =
+  | { id: string; title: string; goal: string; kind: 'lesson' | 'practice'; exercises: Exercise[] }
+  | { id: string; title: string; goal: string; kind: 'roleplay'; intro: string; turns: Turn[] };
 
 const audio = {
   muraho: require('../../assets/audio/muraho.wav'),
@@ -118,91 +128,152 @@ const motari = {
   letsGo: { text: 'Ntacyo, vayo tugende.', meaning: "Okay, come, let's go.", audio: audio.motariTugende },
 } satisfies Record<string, Line>;
 
-const learn = (line: Line): Step => ({ kind: 'learn', line });
-const recall = (line: Line): Step => ({ kind: 'recall', line });
-const listen = (line: Line, ...wrongMeanings: string[]): Step => ({ kind: 'listen', line, wrongMeanings });
-const talk = (...turns: Turn[]): Step => ({ kind: 'talk', turns });
+const introduce = (line: Line): Exercise => ({ kind: 'introduce', line });
+const listen = (line: Line, ...wrong: string[]): Exercise => ({ kind: 'listen', line, wrong });
+const hearMotari = (line: Line, ...wrong: string[]): Exercise => ({ kind: 'listen', line, wrong, speaker: 'motari' });
+const read = (line: Line, ...wrong: Line[]): Exercise => ({ kind: 'read', line, wrong });
+const pairs = (...lines: Line[]): Exercise => ({ kind: 'pairs', lines });
+const build = (line: Line, ...extra: string[]): Exercise => ({ kind: 'build', line, extra });
+const recall = (line: Line): Exercise => ({ kind: 'recall', line });
+const talk = (...turns: Turn[]): Exercise => ({ kind: 'talk', turns });
 const say = (line: Line): Turn => ({ speaker: 'me', line });
 const hears = (line: Line): Turn => ({ speaker: 'motari', line });
 
-export const MODULE_TITLE = 'Taking a moto in Kigali';
+export const UNIT_NUMBER = 1;
+export const UNIT_TITLE = 'Taking a moto in Kigali';
+export const UNIT_GOAL = 'Greet a motari, say where you are going and agree on a price.';
 
-export const LESSONS: Lesson[] = [
+export const LEVELS: Level[] = [
   {
-    id: 'moto-1',
-    title: 'Greetings',
+    id: 'u1-hello',
+    title: 'Hello',
     goal: 'Greet anyone at any time of day.',
-    kind: 'steps',
-    steps: [
-      learn(me.muraho),
-      learn(me.mwaramutse),
-      learn(me.mwiriwe),
-      learn(me.biteSe),
-      listen(motari.mwaramutse, 'Thank you', 'Good afternoon / evening'),
+    kind: 'lesson',
+    exercises: [
+      introduce(me.muraho),
+      listen(me.muraho, 'Thank you', 'Good morning'),
+      introduce(me.mwaramutse),
+      read(me.mwaramutse, me.muraho),
+      introduce(me.mwiriwe),
+      hearMotari(motari.mwaramutse, 'Good afternoon / evening', 'Hello'),
+      read(me.mwiriwe, me.mwaramutse, me.muraho),
+      pairs(me.muraho, me.mwaramutse, me.mwiriwe),
       recall(me.muraho),
       recall(me.mwiriwe),
       recall(me.mwaramutse),
     ],
   },
   {
-    id: 'moto-2',
-    title: 'Calling a moto',
-    goal: 'Call a motari and answer yes, no and thank you.',
-    kind: 'steps',
-    steps: [
-      learn(me.mota),
-      learn(me.yego),
-      learn(me.oya),
-      learn(me.murakoze),
-      listen(motari.letsGo, 'No, thank you.', 'Yes, I know the place.'),
-      recall(me.yego),
+    id: 'u1-thanks',
+    title: 'Hi and thanks',
+    goal: 'Say hi to a friend, answer yes or no, and say thank you.',
+    kind: 'lesson',
+    exercises: [
+      introduce(me.biteSe),
+      hearMotari(motari.biteSe, 'Thank you', 'Good morning'),
+      introduce(me.murakoze),
+      read(me.murakoze, me.muraho, me.mwiriwe),
+      introduce(me.yego),
+      introduce(me.oya),
+      listen(me.oya, 'Yes', 'Thank you'),
+      read(me.yego, me.oya, me.biteSe),
+      pairs(me.yego, me.oya, me.murakoze, me.biteSe),
       recall(me.murakoze),
       recall(me.oya),
-      recall(me.mwaramutse),
-      talk(say(me.mota), hears(motari.letsGo), say(me.murakoze)),
+      recall(me.mwiriwe),
     ],
   },
   {
-    id: 'moto-3',
+    id: 'u1-practice-1',
+    title: 'Practice: greetings',
+    goal: 'Remember every greeting from the first two lessons.',
+    kind: 'practice',
+    exercises: [
+      listen(me.mwiriwe, 'Good morning', 'Hello'),
+      read(me.biteSe, me.murakoze, me.muraho),
+      pairs(me.muraho, me.mwaramutse, me.mwiriwe, me.murakoze),
+      hearMotari(motari.mwiriwe, 'Good morning', 'Thank you'),
+      read(me.oya, me.yego, me.mota),
+      recall(me.mwaramutse),
+      recall(me.yego),
+      recall(me.biteSe),
+      recall(me.murakoze),
+    ],
+  },
+  {
+    id: 'u1-moto',
+    title: 'Calling a moto',
+    goal: 'Call a motari and greet him.',
+    kind: 'lesson',
+    exercises: [
+      introduce(me.mota),
+      read(me.mota, me.murakoze, me.oya),
+      hearMotari(motari.muraho, 'Thank you', "Okay, come, let's go."),
+      hearMotari(motari.letsGo, 'No, thank you.', 'Hello to you too'),
+      pairs(me.mota, me.muraho, me.yego, me.murakoze),
+      recall(me.mota),
+      recall(me.muraho),
+      talk(say(me.mwaramutse), hears(motari.mwaramutse), say(me.mota)),
+    ],
+  },
+  {
+    id: 'u1-where',
     title: 'Where to?',
     goal: 'Tell a motari where you want to go.',
-    kind: 'steps',
-    steps: [
-      learn(part.sitadi),
-      learn(part.kuriSitadi),
-      learn(part.iRemeraKuriSitadi),
-      learn(me.whereTo),
-      listen(motari.knowIt, "No, I don't know it.", "It's 1000 francs."),
+    kind: 'lesson',
+    exercises: [
+      introduce(part.sitadi),
+      introduce(part.kuriSitadi),
+      introduce(part.iRemeraKuriSitadi),
+      introduce(me.whereTo),
+      build(me.whereTo, 'Mota', 'Oya'),
+      hearMotari(motari.knowIt, "No, I don't know it.", "It's 1000 francs."),
+      listen(me.whereTo, 'How much to Remera stadium?', 'Yes, I know the place.'),
       recall(me.whereTo),
-      recall(me.mota),
-      recall(me.mwiriwe),
       talk(say(me.mota), say(me.whereTo), hears(motari.knowIt)),
     ],
   },
   {
-    id: 'moto-4',
+    id: 'u1-price',
     title: 'How much?',
     goal: 'Ask the price and offer less.',
-    kind: 'steps',
-    steps: [
-      learn(part.niAngahe),
-      learn(me.howMuch),
-      learn(part.maganaInani),
-      learn(part.ndaguhaMaganaInani),
-      learn(me.offer),
-      listen(motari.price, "It's 800 francs.", 'Yes, I know the place.'),
+    kind: 'lesson',
+    exercises: [
+      introduce(part.niAngahe),
+      introduce(me.howMuch),
+      build(me.howMuch, 'kujya', 'Yego'),
+      hearMotari(motari.price, "It's 800 francs.", 'Yes, I know the place.'),
+      introduce(part.maganaInani),
+      introduce(part.ndaguhaMaganaInani),
+      introduce(me.offer),
+      build(me.offer, 'Yego', 'igihumbi'),
       recall(me.howMuch),
       recall(me.offer),
-      recall(me.whereTo),
-      recall(me.yego),
       talk(say(me.howMuch), hears(motari.price), say(me.offer), hears(motari.letsGo)),
     ],
   },
   {
-    id: 'moto-5',
+    id: 'u1-practice-2',
+    title: 'Practice: the ride',
+    goal: 'Get every line of the ride ready.',
+    kind: 'practice',
+    exercises: [
+      hearMotari(motari.knowIt, "It's 1000 francs.", "Okay, come, let's go."),
+      read(me.whereTo, me.howMuch, me.offer),
+      hearMotari(motari.price, "It's 800 francs.", 'Hello to you too'),
+      build(me.offer, 'Mota', 'kuri'),
+      pairs(me.mota, me.murakoze, me.oya, me.mwiriwe),
+      hearMotari(motari.letsGo, 'No, thank you.', "It's 1000 francs."),
+      recall(me.whereTo),
+      recall(me.howMuch),
+      recall(me.offer),
+    ],
+  },
+  {
+    id: 'u1-ride',
     title: 'The ride',
     goal: 'Take a moto to Remera stadium and agree on a price, all in Kinyarwanda.',
-    kind: 'ride',
+    kind: 'roleplay',
     intro: 'You need a moto to Remera stadium. Greet the motari and agree on a price.',
     turns: [
       {
@@ -226,11 +297,11 @@ export const LESSONS: Lesson[] = [
   },
 ];
 
-export function findLesson(id: string): Lesson | undefined {
-  return LESSONS.find((lesson) => lesson.id === id);
+export function findLevel(id: string): Level | undefined {
+  return LEVELS.find((level) => level.id === id);
 }
 
-// A lesson opens once the one before it is finished.
+// A level opens once the one before it is finished.
 export function isUnlocked(index: number, completed: readonly string[]): boolean {
-  return index === 0 || completed.includes(LESSONS[index - 1].id);
+  return index === 0 || completed.includes(LEVELS[index - 1].id);
 }

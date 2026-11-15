@@ -29,10 +29,34 @@ const CREDITS = [
     url: 'https://github.com/meta/astryx',
   },
   {
-    what: 'Fonts',
-    who: 'DM Sans and Playwrite US Trad, from Google Fonts',
+    what: 'Text font',
+    who: 'Open Sans, from Google Fonts',
     licence: 'SIL Open Font License 1.1',
-    url: 'https://fonts.google.com',
+    url: 'https://fonts.google.com/specimen/Open+Sans',
+  },
+  {
+    what: 'Heading font',
+    who: 'Satoshi by Indian Type Foundry, from Fontshare',
+    licence: 'ITF Free Font License',
+    url: 'https://www.fontshare.com/fonts/satoshi',
+  },
+  {
+    what: 'Icons',
+    who: 'Lucide',
+    licence: 'ISC',
+    url: 'https://lucide.dev',
+  },
+  {
+    what: 'Profile pictures',
+    who: 'Adventurer by Lisa Wischofsky, drawn with DiceBear',
+    licence: 'CC BY 4.0',
+    url: 'https://www.dicebear.com/styles/adventurer/',
+  },
+  {
+    what: 'Vibration patterns',
+    who: 'Based on web-haptics by Lochie Axon',
+    licence: 'MIT',
+    url: 'https://github.com/lochie/web-haptics',
   },
   {
     what: 'Sounds',

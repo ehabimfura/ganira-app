@@ -1,6 +1,6 @@
 import { useAudioPlayer, type AudioSource } from 'expo-audio';
-import * as Haptics from 'expo-haptics';
 import { useCallback } from 'react';
+import { haptics } from '@/lib/haptics';
 
 // A missing speaker or a browser that blocks sound must never stop a lesson,
 // so failures are logged and the lesson carries on.
@@ -12,7 +12,6 @@ export function useClipPlayer(): (clip: AudioSource | undefined) => void {
   return useCallback(
     (clip: AudioSource | undefined) => {
       if (!clip) return;
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
       try {
         player.replace(clip);
         player.play();
@@ -24,16 +23,32 @@ export function useClipPlayer(): (clip: AudioSource | undefined) => void {
   );
 }
 
-// Feedback is a sound and a vibration, never praise words.
-export function useSuccessFeedback(): () => void {
+function useChime(): () => void {
   const chime = useAudioPlayer(require('../../assets/audio/chime.wav'));
   return useCallback(() => {
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     try {
       chime.seekTo(0);
       chime.play();
     } catch (error) {
       console.warn('Could not play sound', error);
     }
+  }, [chime]);
+}
+
+// Feedback is a sound and a vibration, never praise words.
+export function useSuccessFeedback(): () => void {
+  const chime = useChime();
+  return useCallback(() => {
+    haptics.correct();
+    chime();
+  }, [chime]);
+}
+
+// A finished lesson: the chime with the long celebration vibration.
+export function useCelebration(): () => void {
+  const chime = useChime();
+  return useCallback(() => {
+    haptics.celebrate();
+    chime();
   }, [chime]);
 }

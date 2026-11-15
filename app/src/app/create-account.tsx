@@ -1,4 +1,4 @@
-import { Redirect, useLocalSearchParams } from 'expo-router';
+import { Redirect, router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { AvatarPicker } from '@/components/avatar-picker';
 import { Body, Button, ErrorText, Field, FormScreen, Title } from '@/components/ui';
@@ -100,6 +100,8 @@ export default function CreateAccount() {
         />
         <ErrorText message={error} />
         <Button label="Create account" onPress={submit} busy={busy} />
+      {/* Someone who already has an account (e.g. on another phone) signs in instead. */}
+      <Button label="I already have an account" variant="secondary" onPress={() => router.push('/sign-in')} />
     </FormScreen>
   );
 }

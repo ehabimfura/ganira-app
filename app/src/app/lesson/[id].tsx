@@ -1,27 +1,31 @@
 import { useLocalSearchParams } from 'expo-router';
+import { Check, Trophy } from 'lucide-react-native';
 import { useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
-import { StepLesson } from '@/components/lesson-steps';
+import { Confetti } from '@/components/lesson/confetti';
+import { LessonHeader } from '@/components/lesson/lesson-header';
+import { LessonRunner } from '@/components/lesson/lesson-runner';
+import { LEVEL_ICONS, LEVEL_LABELS } from '@/components/lesson/level-kinds';
 import { Ride } from '@/components/ride';
 import { Body, Button, ErrorText, Screen, Title } from '@/components/ui';
-import { findLesson, LESSONS } from '@/content/module1';
+import { findLevel, LEVELS } from '@/content/unit1';
 import { apiRequest, messageFor } from '@/lib/api';
 import { returnHome } from '@/lib/navigation';
-import { useSuccessFeedback } from '@/lib/sounds';
+import { useCelebration } from '@/lib/sounds';
 import { useSession } from '@/lib/session';
-import { colors, font, fonts } from '@/theme';
+import { colors, font, fonts, palette, space } from '@/theme';
 
 type Stage = 'goal' | 'learning' | 'saving' | 'done' | 'failed';
 
 export default function LessonScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const lesson = findLesson(id);
+  const level = findLevel(id);
   const { token, refresh } = useSession();
-  const success = useSuccessFeedback();
+  const celebrate = useCelebration();
   const [stage, setStage] = useState<Stage>('goal');
   const [error, setError] = useState<string | null>(null);
 
-  if (!lesson) {
+  if (!level) {
     return (
       <Screen>
         <Title>Lesson not found</Title>
@@ -29,16 +33,17 @@ export default function LessonScreen() {
       </Screen>
     );
   }
-  const number = LESSONS.indexOf(lesson) + 1;
+  const number = LEVELS.indexOf(level) + 1;
+  const KindIcon = LEVEL_ICONS[level.kind];
 
-  // Save first, then the sound and vibration, so they only play once progress is safe.
+  // Save first, then the celebration, so it only plays once progress is safe.
   async function finish() {
     setStage('saving');
     setError(null);
     try {
-      await apiRequest(`/lessons/${lesson!.id}/complete`, { method: 'POST', token });
+      await apiRequest(`/lessons/${level!.id}/complete`, { method: 'POST', token });
       await refresh();
-      success();
+      celebrate();
       setStage('done');
     } catch (e) {
       setError(messageFor(e));
@@ -46,15 +51,20 @@ export default function LessonScreen() {
     }
   }
 
-  // Each lesson opens with what the learner will be able to do by the end.
+  // Each level opens with what the learner will be able to do by the end.
   if (stage === 'goal') {
     return (
       <Screen>
         <View style={styles.center}>
-          <Text style={styles.label}>Lesson {number}</Text>
-          <Title>{lesson.title}</Title>
+          <View style={[styles.badge, { backgroundColor: palette.green }]}>
+            <KindIcon size={44} color={colors.primaryText} strokeWidth={2.5} />
+          </View>
+          <Text style={styles.label}>
+            {LEVEL_LABELS[level.kind]} · Level {number} of {LEVELS.length}
+          </Text>
+          <Title>{level.title}</Title>
           <Text style={styles.label}>By the end you can:</Text>
-          <Text style={styles.goal}>{lesson.goal}</Text>
+          <Text style={styles.goal}>{level.goal}</Text>
         </View>
         <Button label="Start" onPress={() => setStage('learning')} />
       </Screen>
@@ -74,7 +84,7 @@ export default function LessonScreen() {
   if (stage === 'failed') {
     return (
       <Screen>
-        <Title>{lesson.title}</Title>
+        <Title>{level.title}</Title>
         <ErrorText message={error} />
         <Button label="Try again" onPress={finish} />
       </Screen>
@@ -82,37 +92,45 @@ export default function LessonScreen() {
   }
 
   if (stage === 'done') {
+    const FinishIcon = level.kind === 'roleplay' ? Trophy : Check;
     return (
       <Screen>
+        <Confetti />
         <View style={styles.center}>
-          <Text style={styles.mark}>{lesson.kind === 'ride' ? '🏍️' : '✓'}</Text>
-          <Title>{lesson.title}</Title>
-          <Body>Lesson {number} complete</Body>
+          <View style={[styles.badge, styles.badgeLarge, { backgroundColor: palette.yellow }]}>
+            <FinishIcon size={64} color={colors.primaryText} strokeWidth={3} />
+          </View>
+          <Text style={styles.complete}>{LEVEL_LABELS[level.kind]} complete</Text>
+          <Title>{level.title}</Title>
           <Text style={styles.label}>Now you can:</Text>
-          <Text style={styles.goal}>{lesson.goal}</Text>
+          <Text style={styles.goal}>{level.goal}</Text>
         </View>
-        <Button label="Back to lessons" onPress={returnHome} />
+        <Button label="Continue" variant="success" onPress={returnHome} />
       </Screen>
     );
   }
 
   return (
     <Screen>
-      <Title>
-        {number}. {lesson.title}
-      </Title>
-      {lesson.kind === 'ride' ? (
-        <Ride intro={lesson.intro} turns={lesson.turns} onFinish={finish} />
+      {level.kind === 'roleplay' ? (
+        <View style={styles.flex}>
+          <LessonHeader progress={0} onQuit={returnHome} />
+          <Body>{level.intro}</Body>
+          <Ride turns={level.turns} onFinish={finish} />
+        </View>
       ) : (
-        <StepLesson steps={lesson.steps} onFinish={finish} />
+        <LessonRunner exercises={level.exercises} onFinish={finish} onQuit={returnHome} />
       )}
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8 },
-  mark: { fontSize: font.hero * 2, color: colors.primary, fontFamily: fonts.bold },
-  label: { fontSize: font.label, color: colors.muted, fontFamily: fonts.semibold },
+  flex: { flex: 1, gap: space.md },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: space.sm },
+  badge: { width: 88, height: 88, borderRadius: 44, alignItems: 'center', justifyContent: 'center', marginBottom: space.sm },
+  badgeLarge: { width: 120, height: 120, borderRadius: 60 },
+  label: { fontSize: font.label, color: colors.muted, fontFamily: fonts.semibold, textAlign: 'center' },
+  complete: { fontSize: font.body, color: palette.orange, fontFamily: fonts.heading, textTransform: 'uppercase', letterSpacing: 1 },
   goal: { fontSize: font.body + 2, color: colors.text, textAlign: 'center', fontFamily: fonts.semibold },
 });

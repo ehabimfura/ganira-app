@@ -50,6 +50,29 @@ def decode_audio(data: bytes) -> np.ndarray:
     return audio.astype(np.float32, copy=False)
 
 
+FRAME = SAMPLE_RATE // 50  # 20 ms
+LEAD = int(SAMPLE_RATE * 0.3)  # quiet kept before the speech
+TAIL = int(SAMPLE_RATE * 0.6)  # and after it: the model needs a pause to finish the last word
+
+
+def trim_silence(audio: np.ndarray) -> np.ndarray:
+    """Cuts the quiet before and after the speech: the model's time grows with the audio's length.
+
+    A frame counts as speech when it is louder than 2% of the loudest frame (a breathy "h" is soft) and above
+    a fixed floor (so a silent recording is returned whole and judged by the model).
+    """
+    frames = len(audio) // FRAME
+    if frames == 0:
+        return audio
+    rms = np.sqrt(np.mean(audio[: frames * FRAME].reshape(frames, FRAME) ** 2, axis=1))
+    loud = np.flatnonzero(rms > max(0.02 * rms.max(), 0.003))
+    if loud.size == 0:
+        return audio
+    start = max(0, loud[0] * FRAME - LEAD)
+    end = min(len(audio), (loud[-1] + 1) * FRAME + TAIL)
+    return audio[start:end]
+
+
 class Transcriber:
     def __init__(self, model_dir: Path):
         self.session = ort.InferenceSession(str(model_dir / "model.int8.onnx"), providers=["CPUExecutionProvider"])
@@ -61,6 +84,7 @@ class Transcriber:
             self.vocab[int(index)] = token
 
     def transcribe(self, audio: np.ndarray) -> str:
+        audio = trim_silence(audio)
         features = self.features(audio, sampling_rate=SAMPLE_RATE, return_tensors="np")["input_features"]
         logprobs, lengths = self.session.run(
             None,

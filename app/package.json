@@ -3,8 +3,9 @@
   "version": "1.0.0",
   "main": "expo-router/entry",
   "dependencies": {
-    "@expo-google-fonts/dm-sans": "^0.4.2",
-    "@expo-google-fonts/playwrite-us-trad": "^0.4.1",
+    "@dicebear/adventurer": "^9.4.2",
+    "@dicebear/core": "^9.4.3",
+    "@expo-google-fonts/open-sans": "^0.4.2",
     "expo": "~58.0.23",
     "expo-audio": "~58.0.11",
     "expo-constants": "~58.0.15",
@@ -14,12 +15,15 @@
     "expo-router": "~58.0.30",
     "expo-secure-store": "~58.0.2",
     "expo-status-bar": "~58.0.4",
+    "lucide-react-native": "^1.73.0",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "react-native": "0.88.1",
     "react-native-safe-area-context": "~5.11.1",
     "react-native-screens": "~4.30.1",
-    "react-native-web": "^0.21.4"
+    "react-native-svg": "15.16.0",
+    "react-native-web": "^0.21.4",
+    "web-haptics": "^0.0.6"
   },
   "devDependencies": {
     "@types/react": "~19.3.0",

@@ -1,19 +1,20 @@
+import { Motorbike, Volume2 } from 'lucide-react-native';
 import { useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View, type ScrollViewInstance } from 'react-native';
 import { Speak } from '@/components/speak';
 import { Body, Button, Choice } from '@/components/ui';
-import type { GreetingOption, Line, Turn } from '@/content/module1';
+import type { GreetingOption, Line, Turn } from '@/content/unit1';
 import { useClipPlayer } from '@/lib/sounds';
-import { colors, font, fonts, radiusLarge, shadow, space } from '@/theme';
+import { colors, font, fonts, palette, radiusLarge, shadow, space } from '@/theme';
 
-// A conversation with a motari, as a chat: the full ride in lesson 5, and short
-// exchanges at the end of lessons 2-4. The learner speaks their lines; each motari
+// A conversation with a motari, as a chat: the full ride at the end of the unit, and
+// short exchanges inside lessons. The learner speaks their lines; each motari
 // answer appears (and plays) as soon as the learner moves on.
 export function Ride({
   intro,
   turns,
   onFinish,
-  finishLabel = '🏍️ Finish',
+  finishLabel = 'Finish',
 }: {
   intro?: string;
   turns: Turn[];
@@ -90,7 +91,12 @@ function Bubble({ line, mine, onPlay }: { line: Line; mine: boolean; onPlay: (cl
       onPress={() => onPlay(line.audio)}
       style={[styles.bubble, mine ? styles.mine : styles.theirs]}
     >
-      {!mine && <Text style={styles.who}>🏍️ Motari</Text>}
+      {!mine && (
+        <View style={styles.whoRow}>
+          <Motorbike size={16} color={palette.orange} strokeWidth={2.25} />
+          <Text style={styles.who}>Motari</Text>
+        </View>
+      )}
       <Text style={[styles.bubbleText, mine && styles.mineText]}>{line.text}</Text>
       <Text style={[styles.bubbleMeaning, mine && styles.mineText]}>{line.meaning}</Text>
     </Pressable>
@@ -108,7 +114,8 @@ function SayTurn({ line, onPlay, onDone }: { line: Line; onPlay: (clip: Line['au
       <Text style={styles.meaning}>{line.meaning}</Text>
       {line.audio ? (
         <Button
-          label="🔊 Listen"
+          label="Listen"
+          icon={Volume2}
           variant="secondary"
           onPress={() => {
             onPlay(line.audio);
@@ -162,8 +169,9 @@ const styles = StyleSheet.create({
   bubble: { maxWidth: '80%', padding: space.md, borderRadius: radiusLarge, gap: 2 },
   mine: { alignSelf: 'flex-end', backgroundColor: colors.primary },
   theirs: { alignSelf: 'flex-start', backgroundColor: colors.surface, ...shadow },
+  whoRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   who: { fontSize: font.label, color: colors.muted, fontFamily: fonts.semibold },
-  bubbleText: { fontSize: font.body, fontFamily: fonts.bold, color: colors.text },
+  bubbleText: { fontSize: font.body, fontFamily: fonts.headingBold, color: colors.text },
   bubbleMeaning: { fontSize: font.label, fontFamily: fonts.regular, color: colors.muted },
   mineText: { color: colors.primaryText },
   turn: { gap: space.sm, paddingTop: space.md, borderTopWidth: 1, borderColor: colors.border },
