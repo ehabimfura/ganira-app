@@ -28,7 +28,7 @@ class ServerKeyTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.server = ThreadingHTTPServer(("127.0.0.1", 0), make_handler(FakeTranscriber(), key="secret-key"))
+        cls.server = ThreadingHTTPServer(("127.0.0.1", 0), make_handler(lambda: FakeTranscriber(), key="secret-key"))
         threading.Thread(target=cls.server.serve_forever, daemon=True).start()
         cls.url = f"http://127.0.0.1:{cls.server.server_port}"
 
@@ -59,6 +59,31 @@ class ServerKeyTest(unittest.TestCase):
         self.assertEqual(self.post({"X-Speech-Key": "secret-key"}), (200, {"text": "muraho"}))
 
 
+class StartingTest(unittest.TestCase):
+    """While the model loads, the service already answers, so Azure can retire the old copy."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.server = ThreadingHTTPServer(("127.0.0.1", 0), make_handler(lambda: None))
+        threading.Thread(target=cls.server.serve_forever, daemon=True).start()
+        cls.url = f"http://127.0.0.1:{cls.server.server_port}"
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.server.shutdown()
+        cls.server.server_close()
+
+    def test_health_answers_while_the_model_loads(self):
+        with urllib.request.urlopen(f"{self.url}/health") as response:
+            self.assertEqual(json.load(response), {"status": "ok", "model": "loading"})
+
+    def test_a_recording_sent_too_early_gets_a_clear_not_ready(self):
+        request = urllib.request.Request(f"{self.url}/transcribe", data=WAV, method="POST")
+        with self.assertRaises(urllib.error.HTTPError) as caught:
+            urllib.request.urlopen(request)
+        self.assertEqual((caught.exception.code, json.load(caught.exception)), (503, {"error": "STARTING"}))
+
+
 class SlowTranscriber:
     """Remembers how many transcriptions ran at the same moment."""
 
@@ -82,7 +107,7 @@ class OneAtATimeTest(unittest.TestCase):
 
     def test_recordings_are_transcribed_one_after_another(self):
         transcriber = SlowTranscriber()
-        server = ThreadingHTTPServer(("127.0.0.1", 0), make_handler(transcriber))
+        server = ThreadingHTTPServer(("127.0.0.1", 0), make_handler(lambda: transcriber))
         threading.Thread(target=server.serve_forever, daemon=True).start()
         url = f"http://127.0.0.1:{server.server_port}/transcribe"
         try:

@@ -12,6 +12,7 @@ import logging
 import os
 import threading
 import time
+from collections.abc import Callable
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
@@ -47,14 +48,28 @@ def memory_report() -> str:
             break
         except (OSError, ValueError):
             continue
+    # Every process in this container with its memory, so a second copy of anything shows up.
+    others = []
+    for proc in Path("/proc").iterdir():
+        if not proc.name.isdigit():
+            continue
+        try:
+            cmd = (proc / "cmdline").read_bytes().replace(b"\0", b" ").decode(errors="replace").strip()
+            rss = kb((proc / "status").read_text(), "VmRSS")
+        except (OSError, StopIteration):
+            continue
+        if cmd and rss >= 10:
+            others.append(f"{proc.name}:{rss}MB:{cmd[:40]}")
     return (
+        f"processes [{'; '.join(sorted(others))}]; "
         f"process {kb(status, 'VmRSS')} MB in memory + {kb(status, 'VmSwap')} MB in swap, container cap {limit}, "
         f"machine free {kb(info, 'MemAvailable')} of {kb(info, 'MemTotal')} MB, "
         f"swap used {kb(info, 'SwapTotal') - kb(info, 'SwapFree')} MB, load {load}"
     )
 
 
-def make_handler(transcriber: Transcriber, key: str | None = None):
+def make_handler(get_transcriber: Callable[[], Transcriber | None], key: str | None = None):
+    """get_transcriber gives the loaded model, or None while it is still loading."""
     # One transcription at a time: on a one-core server, checks running together all slow
     # down and can all miss the API's deadline. Waiting in line keeps each one fast.
     one_at_a_time = threading.Lock()
@@ -70,7 +85,7 @@ def make_handler(transcriber: Transcriber, key: str | None = None):
 
         def do_GET(self) -> None:
             if self.path == "/health":
-                self._send(200, {"status": "ok"})
+                self._send(200, {"status": "ok", "model": "ready" if get_transcriber() else "loading"})
             else:
                 self._send(404, {"error": "NOT_FOUND"})
 
@@ -80,6 +95,10 @@ def make_handler(transcriber: Transcriber, key: str | None = None):
                 return
             if key and not hmac.compare_digest(self.headers.get("X-Speech-Key", "").encode(), key.encode()):
                 self._send(401, {"error": "UNAUTHORIZED"})
+                return
+            transcriber = get_transcriber()
+            if transcriber is None:
+                self._send(503, {"error": "STARTING"})
                 return
             length = int(self.headers.get("Content-Length") or 0)
             if length <= 0 or length > MAX_BYTES:
@@ -115,10 +134,18 @@ def make_handler(transcriber: Transcriber, key: str | None = None):
 
 def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
-    ensure_model(MODEL_DIR)
-    transcriber = Transcriber(MODEL_DIR)
-    server = ThreadingHTTPServer((HOST, PORT), make_handler(transcriber, KEY))
-    log.info("Ganira speech service listening on http://%s:%d", HOST, PORT)
+    # Answer at once and load the model in the background. Azure only retires the old copy
+    # of the service once the new one answers, and two copies of the model don't fit in memory.
+    loaded: list[Transcriber] = []
+
+    def load() -> None:
+        ensure_model(MODEL_DIR)
+        loaded.append(Transcriber(MODEL_DIR))
+        log.info("Model loaded; %s", memory_report())
+
+    threading.Thread(target=load, daemon=True).start()
+    server = ThreadingHTTPServer((HOST, PORT), make_handler(lambda: loaded[0] if loaded else None, KEY))
+    log.info("Ganira speech service listening on http://%s:%d (model loading)", HOST, PORT)
     server.serve_forever()
 
 
