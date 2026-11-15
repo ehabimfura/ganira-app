@@ -6,7 +6,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Speak } from '@/components/speak';
 import { Body, Button, Screen, Title } from '@/components/ui';
 import { useSession } from '@/lib/session';
-import { colors, font, space } from '@/theme';
+import { colors, font, fonts, space } from '@/theme';
 
 // Speaking in the first seconds: hear "Muraho" in the lesson voice, then say it.
 // There is no skip and no "I said it" button: the speech check hears the learner,
@@ -63,6 +63,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: space.sm,
   },
-  word: { fontSize: font.hero, fontWeight: '800', color: colors.text },
-  meaning: { fontSize: font.body, color: colors.muted },
+  word: { fontSize: font.hero, fontFamily: fonts.bold, color: colors.text },
+  meaning: { fontSize: font.body, fontFamily: fonts.regular, color: colors.muted },
 });

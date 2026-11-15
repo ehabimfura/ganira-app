@@ -6,7 +6,7 @@ import { messageFor } from '@/lib/api';
 import { useSession } from '@/lib/session';
 import { useSuccessFeedback } from '@/lib/sounds';
 import { checkSpeech, type SpeechResult } from '@/lib/speech';
-import { colors, font, space } from '@/theme';
+import { colors, font, fonts, space } from '@/theme';
 
 const MAX_RECORDING_MS = 10000;
 
@@ -101,7 +101,7 @@ export function Speak({ expected, onTried }: { expected: string; onTried: () => 
 
 const styles = StyleSheet.create({
   box: { gap: space.sm },
-  words: { fontSize: font.body + 4, textAlign: 'center' },
-  heard: { color: colors.primary, fontWeight: '800' },
-  missed: { color: colors.muted, fontWeight: '600' },
+  words: { fontSize: font.body + 4, fontFamily: fonts.regular, textAlign: 'center' },
+  heard: { color: colors.success, fontFamily: fonts.bold },
+  missed: { color: colors.muted, fontFamily: fonts.semibold, opacity: 0.55 },
 });

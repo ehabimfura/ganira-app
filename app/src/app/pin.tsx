@@ -6,7 +6,7 @@ import { apiRequest, messageFor } from '@/lib/api';
 import { avatarEmoji } from '@/lib/avatars';
 import { returnHome } from '@/lib/navigation';
 import { useSession } from '@/lib/session';
-import { font } from '@/theme';
+import { font, fonts } from '@/theme';
 
 // Opens a PIN-locked child profile.
 export default function Pin() {
@@ -52,5 +52,5 @@ export default function Pin() {
 }
 
 const styles = StyleSheet.create({
-  avatar: { fontSize: font.hero, textAlign: 'center' },
+  avatar: { fontSize: font.hero, fontFamily: fonts.regular, textAlign: 'center' },
 });

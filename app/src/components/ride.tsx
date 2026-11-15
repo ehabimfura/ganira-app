@@ -4,7 +4,7 @@ import { Speak } from '@/components/speak';
 import { Body, Button, Choice } from '@/components/ui';
 import type { GreetingOption, Line, Turn } from '@/content/module1';
 import { useClipPlayer } from '@/lib/sounds';
-import { colors, font, radius, space } from '@/theme';
+import { colors, font, fonts, radiusLarge, shadow, space } from '@/theme';
 
 // A conversation with a motari, as a chat: the full ride in lesson 5, and short
 // exchanges at the end of lessons 2-4. The learner speaks their lines; each motari
@@ -159,15 +159,15 @@ function GreetingTurn({
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   chat: { gap: space.sm, paddingBottom: space.md },
-  bubble: { maxWidth: '80%', padding: space.md, borderRadius: radius, gap: 2 },
+  bubble: { maxWidth: '80%', padding: space.md, borderRadius: radiusLarge, gap: 2 },
   mine: { alignSelf: 'flex-end', backgroundColor: colors.primary },
-  theirs: { alignSelf: 'flex-start', backgroundColor: colors.surface },
-  who: { fontSize: font.label, color: colors.muted, fontWeight: '600' },
-  bubbleText: { fontSize: font.body, fontWeight: '700', color: colors.text },
-  bubbleMeaning: { fontSize: font.label, color: colors.muted },
+  theirs: { alignSelf: 'flex-start', backgroundColor: colors.surface, ...shadow },
+  who: { fontSize: font.label, color: colors.muted, fontFamily: fonts.semibold },
+  bubbleText: { fontSize: font.body, fontFamily: fonts.bold, color: colors.text },
+  bubbleMeaning: { fontSize: font.label, fontFamily: fonts.regular, color: colors.muted },
   mineText: { color: colors.primaryText },
   turn: { gap: space.sm, paddingTop: space.md, borderTopWidth: 1, borderColor: colors.border },
-  yourTurn: { fontSize: font.label, color: colors.primary, fontWeight: '700' },
-  phrase: { fontSize: font.body + 4, fontWeight: '800', color: colors.text },
-  meaning: { fontSize: font.label, color: colors.muted },
+  yourTurn: { fontSize: font.label, color: colors.primary, fontFamily: fonts.bold },
+  phrase: { fontSize: font.body + 4, fontFamily: fonts.bold, color: colors.text },
+  meaning: { fontSize: font.label, fontFamily: fonts.regular, color: colors.muted },
 });

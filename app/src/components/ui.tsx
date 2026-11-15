@@ -12,7 +12,7 @@ import {
   type TextInputProps,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { colors, font, radius, space } from '@/theme';
+import { colors, font, fonts, radius, space } from '@/theme';
 
 export function Screen({ children }: { children: ReactNode }) {
   return (
@@ -155,34 +155,38 @@ const styles = StyleSheet.create({
     height: 26,
     borderRadius: 6,
     borderWidth: 2,
-    borderColor: colors.border,
+    borderColor: colors.borderStrong,
+    backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
   checkBoxOn: { backgroundColor: colors.primary, borderColor: colors.primary },
-  checkMark: { color: colors.primaryText, fontWeight: '800' },
-  checkLabel: { flex: 1, fontSize: font.body, color: colors.text },
-  title: { fontSize: font.title, fontWeight: '700', color: colors.text },
-  body: { fontSize: font.body, color: colors.muted, lineHeight: 22 },
-  error: { fontSize: font.label, color: colors.error },
-  button: { minHeight: 52, borderRadius: radius, alignItems: 'center', justifyContent: 'center', paddingHorizontal: space.md },
+  checkMark: { color: colors.primaryText, fontFamily: fonts.bold },
+  checkLabel: { flex: 1, fontSize: font.body, fontFamily: fonts.regular, color: colors.text },
+  // Headings use the theme's handwriting face; it runs tall, so it gets extra line height.
+  title: { fontSize: font.title, fontFamily: fonts.heading, color: colors.text, lineHeight: font.title * 1.6 },
+  body: { fontSize: font.body, fontFamily: fonts.regular, color: colors.muted, lineHeight: 22 },
+  error: { fontSize: font.label, fontFamily: fonts.regular, color: colors.error },
+  // 48 px: Astryx's large element (44 px) plus room for a finger.
+  button: { minHeight: 48, borderRadius: radius, alignItems: 'center', justifyContent: 'center', paddingHorizontal: space.md },
   primary: { backgroundColor: colors.primary },
-  secondary: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
+  secondary: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.borderStrong },
   disabled: { opacity: 0.5 },
   pressed: { opacity: 0.8 },
-  buttonText: { fontSize: font.body, fontWeight: '600' },
+  buttonText: { fontSize: font.body, fontFamily: fonts.semibold },
   choice: {
     borderWidth: 2,
     borderColor: colors.border,
+    backgroundColor: colors.surface,
     borderRadius: radius,
     padding: space.md,
     gap: space.xs,
   },
-  choiceSelected: { borderColor: colors.primary, backgroundColor: colors.surface },
-  choiceLabel: { fontSize: font.body, fontWeight: '600', color: colors.text },
-  choiceHint: { fontSize: font.label, color: colors.muted },
+  choiceSelected: { borderColor: colors.primary, backgroundColor: colors.selected },
+  choiceLabel: { fontSize: font.body, fontFamily: fonts.semibold, color: colors.text },
+  choiceHint: { fontSize: font.label, fontFamily: fonts.regular, color: colors.muted },
   field: { gap: space.xs },
-  label: { fontSize: font.label, color: colors.text, fontWeight: '600' },
+  label: { fontSize: font.label, color: colors.text, fontFamily: fonts.semibold },
   input: {
     minHeight: 48,
     borderWidth: 1,
@@ -190,6 +194,8 @@ const styles = StyleSheet.create({
     borderRadius: radius,
     paddingHorizontal: space.md,
     fontSize: font.body,
+    fontFamily: fonts.regular,
     color: colors.text,
+    backgroundColor: colors.surface,
   },
 });

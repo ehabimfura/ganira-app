@@ -6,7 +6,7 @@ import { isUnlocked, LESSONS, MODULE_TITLE } from '@/content/module1';
 import { apiRequest, messageFor } from '@/lib/api';
 import { avatarEmoji } from '@/lib/avatars';
 import { useSession, type Profile } from '@/lib/session';
-import { colors, font, radius, space } from '@/theme';
+import { colors, font, fonts, radius, radiusLarge, shadow, space } from '@/theme';
 
 // One Home, three situations:
 //   parent with no child open -> profile picker (or "Add your child" if there are none)
@@ -128,29 +128,31 @@ const styles = StyleSheet.create({
   tile: {
     width: 140,
     padding: space.md,
-    borderRadius: radius,
+    borderRadius: radiusLarge,
     backgroundColor: colors.surface,
+    ...shadow,
     alignItems: 'center',
     gap: space.xs,
   },
-  tileAvatar: { fontSize: 48 },
-  tileName: { fontSize: font.body, fontWeight: '700', color: colors.text },
-  lock: { fontSize: font.label },
+  tileAvatar: { fontSize: 48, fontFamily: fonts.regular },
+  tileName: { fontSize: font.body, fontFamily: fonts.bold, color: colors.text },
+  lock: { fontSize: font.label, fontFamily: fonts.regular },
   header: { flexDirection: 'row', alignItems: 'center', gap: space.md, marginTop: space.md },
-  avatar: { fontSize: 40, backgroundColor: colors.surface, borderRadius: radius, padding: space.sm },
-  parent: { color: colors.primary, fontWeight: '600', fontSize: font.label, padding: space.sm },
-  module: { fontSize: font.label, fontWeight: '700', color: colors.muted, textTransform: 'uppercase' },
+  avatar: { fontSize: 40, fontFamily: fonts.regular, backgroundColor: colors.surface, borderRadius: radius, padding: space.sm },
+  parent: { color: colors.primary, fontFamily: fonts.semibold, fontSize: font.label, padding: space.sm },
+  module: { fontSize: font.label, fontFamily: fonts.bold, color: colors.muted, textTransform: 'uppercase' },
   lesson: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.md,
     padding: space.md,
-    borderRadius: radius,
-    borderWidth: 2,
-    borderColor: colors.primary,
+    borderRadius: radiusLarge,
+    backgroundColor: colors.surface,
+    ...shadow,
   },
-  locked: { borderColor: colors.border, opacity: 0.6 },
-  lessonNumber: { fontSize: font.title, fontWeight: '800', color: colors.primary, width: 32 },
-  lessonTitle: { flex: 1, fontSize: font.body, fontWeight: '600', color: colors.text },
-  lessonState: { fontSize: font.label, color: colors.muted },
+  // A locked lesson sits flat on the page, with no card or shadow.
+  locked: { backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.border, shadowOpacity: 0, elevation: 0 },
+  lessonNumber: { fontSize: font.title, fontFamily: fonts.bold, color: colors.primary, width: 32 },
+  lessonTitle: { flex: 1, fontSize: font.body, fontFamily: fonts.semibold, color: colors.text },
+  lessonState: { fontSize: font.label, fontFamily: fonts.regular, color: colors.muted },
 });

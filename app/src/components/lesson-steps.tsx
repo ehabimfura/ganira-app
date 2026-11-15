@@ -6,7 +6,7 @@ import { Speak } from '@/components/speak';
 import { Body, Button, Choice } from '@/components/ui';
 import type { Line, Step } from '@/content/module1';
 import { useClipPlayer, useSuccessFeedback } from '@/lib/sounds';
-import { colors, font, radius, space } from '@/theme';
+import { colors, font, fonts, radiusLarge, shadow, space } from '@/theme';
 
 // Lessons 1-4, one step at a time: learn, listen, recall, talk (see content/module1.ts).
 // Next appears once the step has been tried; there is no pass mark.
@@ -175,19 +175,20 @@ function ListenCard({ line, wrongMeanings, nextLabel, onNext }: CardProps & { wr
 
 const styles = StyleSheet.create({
   flex: { flex: 1, gap: space.md },
-  progress: { fontSize: font.label, color: colors.muted, textAlign: 'center' },
+  progress: { fontSize: font.label, fontFamily: fonts.regular, color: colors.muted, textAlign: 'center' },
   card: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     gap: space.sm,
     padding: space.lg,
-    borderRadius: radius,
+    borderRadius: radiusLarge,
     backgroundColor: colors.surface,
+    ...shadow,
   },
-  label: { fontSize: font.label, color: colors.muted, fontWeight: '600' },
-  who: { fontSize: font.label, color: colors.primary, fontWeight: '700' },
-  phrase: { fontSize: font.title, fontWeight: '800', color: colors.text, textAlign: 'center' },
-  meaning: { fontSize: font.body, color: colors.muted, textAlign: 'center' },
+  label: { fontSize: font.label, color: colors.muted, fontFamily: fonts.semibold },
+  who: { fontSize: font.label, color: colors.primary, fontFamily: fonts.bold },
+  phrase: { fontSize: font.title, fontFamily: fonts.bold, color: colors.text, textAlign: 'center' },
+  meaning: { fontSize: font.body, fontFamily: fonts.regular, color: colors.muted, textAlign: 'center' },
   actions: { gap: space.sm },
 });

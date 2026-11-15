@@ -1,4 +1,7 @@
+import { DMSans_400Regular, DMSans_500Medium, DMSans_600SemiBold, DMSans_700Bold } from '@expo-google-fonts/dm-sans';
+import { PlaywriteUSTrad_400Regular } from '@expo-google-fonts/playwrite-us-trad';
 import { setAudioModeAsync } from 'expo-audio';
+import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
@@ -9,8 +12,16 @@ import { colors } from '@/theme';
 
 function RootStack() {
   const { status } = useSession();
+  // The Matcha theme's fonts. If they fail to load, the app carries on with the system font.
+  const [fontsLoaded, fontError] = useFonts({
+    DMSans_400Regular,
+    DMSans_500Medium,
+    DMSans_600SemiBold,
+    DMSans_700Bold,
+    PlaywriteUSTrad_400Regular,
+  });
 
-  if (status === 'loading') {
+  if (status === 'loading' || (!fontsLoaded && !fontError)) {
     return (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background }}>
         <ActivityIndicator color={colors.primary} />
@@ -20,7 +31,15 @@ function RootStack() {
 
   const signedIn = status === 'signedIn';
   return (
-    <Stack screenOptions={{ headerTintColor: colors.primary, headerTitle: '', headerShadowVisible: false }}>
+    <Stack
+      screenOptions={{
+        headerTintColor: colors.primary,
+        headerTitle: '',
+        headerShadowVisible: false,
+        headerStyle: { backgroundColor: colors.background },
+        contentStyle: { backgroundColor: colors.background },
+      }}
+    >
       <Stack.Screen name="index" options={{ headerShown: false }} />
       <Stack.Screen name="credits" />
       {/* The first lesson is part of sign-up and also Lesson 1 on the path. */}

@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { AVATARS } from '@/lib/avatars';
-import { colors, font, radius, space } from '@/theme';
+import { colors, font, fonts, radius, space } from '@/theme';
 
 export function AvatarPicker({ value, onChange }: { value: string; onChange: (id: string) => void }) {
   return (
@@ -26,7 +26,7 @@ export function AvatarPicker({ value, onChange }: { value: string; onChange: (id
 
 const styles = StyleSheet.create({
   wrap: { gap: space.xs },
-  label: { fontSize: font.label, fontWeight: '600', color: colors.text },
+  label: { fontSize: font.label, fontFamily: fonts.semibold, color: colors.text },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
   avatar: {
     width: 56,
@@ -39,5 +39,5 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
   selected: { borderColor: colors.primary },
-  emoji: { fontSize: 30 },
+  emoji: { fontSize: 30, fontFamily: fonts.regular },
 });

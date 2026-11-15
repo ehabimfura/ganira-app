@@ -25,7 +25,8 @@
       "expo-router",
       "expo-status-bar",
       "expo-secure-store",
-      "expo-audio"
+      "expo-audio",
+      "expo-font"
     ],
     "scheme": "ganira",
     "experiments": {

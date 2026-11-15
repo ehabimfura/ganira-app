@@ -8,7 +8,7 @@ import type { DailyGoal, Level } from '@/lib/onboarding-draft';
 import { AGE_RANGES, GOAL_OPTIONS, LEVEL_OPTIONS } from '@/lib/onboarding-options';
 import { returnHome } from '@/lib/navigation';
 import { useSession } from '@/lib/session';
-import { colors, font, space } from '@/theme';
+import { colors, font, fonts, space } from '@/theme';
 
 const PIN_RULE = /^\d{4}$/;
 
@@ -113,7 +113,7 @@ export default function AddChild() {
 }
 
 const styles = StyleSheet.create({
-  label: { fontSize: font.label, fontWeight: '600', color: colors.text },
+  label: { fontSize: font.label, fontFamily: fonts.semibold, color: colors.text },
   row: { flexDirection: 'row', gap: space.sm },
   cell: { flex: 1 },
 });

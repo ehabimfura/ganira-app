@@ -9,7 +9,7 @@ import { apiRequest, messageFor } from '@/lib/api';
 import { returnHome } from '@/lib/navigation';
 import { useSuccessFeedback } from '@/lib/sounds';
 import { useSession } from '@/lib/session';
-import { colors, font } from '@/theme';
+import { colors, font, fonts } from '@/theme';
 
 type Stage = 'goal' | 'learning' | 'saving' | 'done' | 'failed';
 
@@ -112,7 +112,7 @@ export default function LessonScreen() {
 
 const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8 },
-  mark: { fontSize: font.hero * 2, color: colors.primary, fontWeight: '800' },
-  label: { fontSize: font.label, color: colors.muted, fontWeight: '600' },
-  goal: { fontSize: font.body + 2, color: colors.text, textAlign: 'center', fontWeight: '600' },
+  mark: { fontSize: font.hero * 2, color: colors.primary, fontFamily: fonts.bold },
+  label: { fontSize: font.label, color: colors.muted, fontFamily: fonts.semibold },
+  goal: { fontSize: font.body + 2, color: colors.text, textAlign: 'center', fontFamily: fonts.semibold },
 });

@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 import { Body, Button, Screen } from '@/components/ui';
-import { colors, font, space } from '@/theme';
+import { colors, font, fonts, space } from '@/theme';
 
 export default function Welcome() {
   return (
@@ -21,6 +21,6 @@ export default function Welcome() {
 
 const styles = StyleSheet.create({
   hero: { flex: 1, justifyContent: 'center', gap: space.sm },
-  greeting: { fontSize: font.hero, fontWeight: '800', color: colors.primary },
-  credits: { textAlign: 'center', color: colors.muted, fontSize: font.label, padding: space.sm },
+  greeting: { fontSize: font.hero, fontFamily: fonts.heading, color: colors.primary, lineHeight: font.hero * 1.6 },
+  credits: { textAlign: 'center', color: colors.muted, fontSize: font.label, fontFamily: fonts.regular, padding: space.sm },
 });
