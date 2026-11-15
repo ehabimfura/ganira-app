@@ -87,11 +87,16 @@ class Transcriber:
         options.intra_op_num_threads = threads
         options.inter_op_num_threads = 1
         options.add_session_config_entry("session.intra_op.allow_spinning", "0")
+        # On Intel/AMD servers ONNX Runtime can keep a second, rearranged copy of the weights
+        # to run faster. SPEECH_PREPACK=0 turns that off to save memory.
+        if os.environ.get("SPEECH_PREPACK") == "0":
+            options.add_session_config_entry("session.disable_prepacking", "1")
         logging.getLogger("speech").info(
-            "Processors seen: %s; usable: %s; model threads: %s",
+            "Processors seen: %s; usable: %s; model threads: %s; prepacking: %s",
             os.cpu_count(),
             len(os.sched_getaffinity(0)) if hasattr(os, "sched_getaffinity") else "?",
             threads or "auto",
+            "off" if os.environ.get("SPEECH_PREPACK") == "0" else "on",
         )
         self.session = ort.InferenceSession(
             str(model_dir / "model.int8.onnx"), options, providers=["CPUExecutionProvider"]
