@@ -10,11 +10,14 @@ export class UnreadableAudioError extends Error {
 
 const TIMEOUT_MS = 20000;
 
-export function createSpeechClient(baseUrl: string): Transcribe {
+// On Azure the speech service has a public address, so it only answers callers with its key.
+export function createSpeechClient(baseUrl: string, key?: string): Transcribe {
+  const headers: Record<string, string> = { "Content-Type": "application/octet-stream" };
+  if (key) headers["X-Speech-Key"] = key;
   return async (audio) => {
     const res = await fetch(`${baseUrl}/transcribe`, {
       method: "POST",
-      headers: { "Content-Type": "application/octet-stream" },
+      headers,
       body: new Uint8Array(audio),
       signal: AbortSignal.timeout(TIMEOUT_MS),
     });

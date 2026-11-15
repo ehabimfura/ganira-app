@@ -5,9 +5,10 @@ badrex/w2v-bert-2.0-kinyarwanda-asr by Badr M. Abdullah / the ASRwanda team and
 Digital Umuganda. Licence CC BY 4.0, credited on the app's Credits screen.
 """
 
-import subprocess
+import io
 from pathlib import Path
 
+import av
 import numpy as np
 import onnxruntime as ort
 from transformers import SeamlessM4TFeatureExtractor
@@ -20,22 +21,33 @@ SKIPPED = {BLANK, "<s>", "</s>", "[UNK]"}
 
 
 class AudioError(ValueError):
-    """The upload is not audio ffmpeg can read, or it is too long."""
+    """The upload is not audio that can be read."""
 
 
 def decode_audio(data: bytes) -> np.ndarray:
-    """Any audio format a phone or browser records (m4a, webm, wav...) -> 16 kHz mono floats."""
-    result = subprocess.run(
-        ["ffmpeg", "-nostdin", "-loglevel", "error", "-i", "pipe:0",
-         "-t", str(MAX_SECONDS), "-ac", "1", "-ar", str(SAMPLE_RATE), "-f", "f32le", "pipe:1"],
-        input=data,
-        capture_output=True,
-        check=False,
-    )
-    audio = np.frombuffer(result.stdout, dtype=np.float32)
-    if result.returncode != 0 or audio.size < SAMPLE_RATE // 10:
-        raise AudioError(result.stderr.decode(errors="replace").strip() or "no audio found")
-    return audio
+    """Any audio format a phone or browser records (m4a, webm, wav...) -> 16 kHz mono floats.
+
+    PyAV carries its own copy of FFmpeg, so the server needs nothing else installed.
+    """
+    limit = MAX_SECONDS * SAMPLE_RATE
+    chunks, total = [], 0
+    try:
+        with av.open(io.BytesIO(data)) as container:
+            resampler = av.AudioResampler(format="flt", layout="mono", rate=SAMPLE_RATE)
+            for frame in container.decode(container.streams.audio[0]):
+                for out in resampler.resample(frame):
+                    chunks.append(out.to_ndarray().reshape(-1))
+                    total += chunks[-1].size
+                if total >= limit:
+                    break
+            else:
+                chunks.extend(out.to_ndarray().reshape(-1) for out in resampler.resample(None))
+    except (av.FFmpegError, IndexError, ValueError) as error:
+        raise AudioError(str(error) or "no audio found") from error
+    audio = np.concatenate(chunks)[:limit] if chunks else np.zeros(0, dtype=np.float32)
+    if audio.size < SAMPLE_RATE // 10:
+        raise AudioError("no audio found")
+    return audio.astype(np.float32, copy=False)
 
 
 class Transcriber:

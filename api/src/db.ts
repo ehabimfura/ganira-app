@@ -14,6 +14,8 @@ export interface DbSettings {
   user: string;
   password: string;
   database: string;
+  // Set on Azure; checks the server's certificate against the roots built into Node.
+  ssl?: { rejectUnauthorized: true };
 }
 
 export function createDatabase(settings: DbSettings): Database {

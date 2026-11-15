@@ -6,7 +6,7 @@ import { createSpeechClient } from "./speech/client.js";
 const db = createDatabase(config.db);
 const app = createApp(db, {
   corsOrigins: config.corsOrigins,
-  transcribe: createSpeechClient(config.speechUrl),
+  transcribe: createSpeechClient(config.speechUrl, config.speechKey),
 });
 
 // 0.0.0.0 means "accept connections from other devices on the network",

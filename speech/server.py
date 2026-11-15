@@ -1,26 +1,31 @@
 """Ganira speech service: POST a recording to /transcribe, get back {"text": "..."}.
 
-Only the Ganira API calls this, so it listens on this computer only (127.0.0.1).
-Run: .venv/bin/python server.py   (needs the model in speech/model/, see README.md)
+Only the Ganira API calls this. On a laptop it listens on this computer only (127.0.0.1).
+On Azure it has a public address, so SPEECH_KEY is set and every request must send it
+in the X-Speech-Key header. Missing model files are downloaded at start.
+Run: .venv/bin/python server.py   (see README.md)
 """
 
+import hmac
 import json
 import logging
 import os
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
+from model_files import ensure_model
 from transcriber import AudioError, Transcriber, decode_audio
 
 HOST = os.environ.get("SPEECH_HOST", "127.0.0.1")
 PORT = int(os.environ.get("SPEECH_PORT", "8000"))
 MODEL_DIR = Path(os.environ.get("SPEECH_MODEL_DIR", Path(__file__).parent / "model"))
+KEY = os.environ.get("SPEECH_KEY") or None
 MAX_BYTES = 2 * 1024 * 1024
 
 log = logging.getLogger("speech")
 
 
-def make_handler(transcriber: Transcriber):
+def make_handler(transcriber: Transcriber, key: str | None = None):
     class Handler(BaseHTTPRequestHandler):
         def _send(self, status: int, body: dict) -> None:
             data = json.dumps(body).encode()
@@ -39,6 +44,9 @@ def make_handler(transcriber: Transcriber):
         def do_POST(self) -> None:
             if self.path != "/transcribe":
                 self._send(404, {"error": "NOT_FOUND"})
+                return
+            if key and not hmac.compare_digest(self.headers.get("X-Speech-Key", "").encode(), key.encode()):
+                self._send(401, {"error": "UNAUTHORIZED"})
                 return
             length = int(self.headers.get("Content-Length") or 0)
             if length <= 0 or length > MAX_BYTES:
@@ -64,8 +72,9 @@ def make_handler(transcriber: Transcriber):
 
 def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+    ensure_model(MODEL_DIR)
     transcriber = Transcriber(MODEL_DIR)
-    server = ThreadingHTTPServer((HOST, PORT), make_handler(transcriber))
+    server = ThreadingHTTPServer((HOST, PORT), make_handler(transcriber, KEY))
     log.info("Ganira speech service listening on http://%s:%d", HOST, PORT)
     server.serve_forever()
 

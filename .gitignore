@@ -26,3 +26,4 @@ __pycache__/
 # Speech model (about 600 MB) and its Python environment
 speech/model/
 speech/.venv/
+.vitest/
