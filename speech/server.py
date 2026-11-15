@@ -38,8 +38,18 @@ def memory_report() -> str:
     def kb(text: str, field: str) -> int:
         line = next(l for l in text.splitlines() if l.startswith(field + ":"))
         return int(line.split()[1]) // 1024
+    # The container's own memory cap, which can be lower than the machine's memory.
+    limit = "none"
+    for path in ("/sys/fs/cgroup/memory.max", "/sys/fs/cgroup/memory/memory.limit_in_bytes"):
+        try:
+            raw = Path(path).read_text().strip()
+            limit = raw if raw == "max" else f"{int(raw) // 2**20} MB"
+            break
+        except (OSError, ValueError):
+            continue
     return (
-        f"process {kb(status, 'VmRSS')} MB, machine free {kb(info, 'MemAvailable')} of {kb(info, 'MemTotal')} MB, "
+        f"process {kb(status, 'VmRSS')} MB in memory + {kb(status, 'VmSwap')} MB in swap, container cap {limit}, "
+        f"machine free {kb(info, 'MemAvailable')} of {kb(info, 'MemTotal')} MB, "
         f"swap used {kb(info, 'SwapTotal') - kb(info, 'SwapFree')} MB, load {load}"
     )
 
