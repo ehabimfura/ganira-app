@@ -394,7 +394,7 @@ await check('three days later the daily review brings phrases back, and finishin
     `-u${env.DB_USER}`, `-h${env.DB_HOST}`, `-P${env.DB_PORT}`, env.DB_NAME, '-e',
     `UPDATE phrase_memory m JOIN learners l ON l.id = m.learner_id
         SET m.last_practised_at = m.last_practised_at - INTERVAL 3 DAY
-      WHERE l.nickname = 'Ineza' AND l.created_at > NOW() - INTERVAL 1 HOUR`,
+      WHERE l.nickname = 'Ineza' AND l.created_at > UTC_TIMESTAMP() - INTERVAL 1 HOUR`,
   ], { env: { ...process.env, MYSQL_PWD: env.DB_PASSWORD } });
   await page.reload();
   await text('Muraho, Ineza!');
