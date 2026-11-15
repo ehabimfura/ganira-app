@@ -59,6 +59,7 @@ describe("child profiles", () => {
         dailyGoalMinutes: 5,
         hasPin: false,
         completedLessons: [],
+        streak: { days: 0, practisedToday: false },
       },
     ]);
   });

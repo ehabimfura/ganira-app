@@ -68,6 +68,7 @@ function RootStack() {
         <Stack.Screen name="pin" />
         <Stack.Screen name="parent-unlock" />
         <Stack.Screen name="lesson/[id]" options={{ headerShown: false, gestureEnabled: false }} />
+        <Stack.Screen name="review" options={{ headerShown: false, gestureEnabled: false }} />
       </Stack.Protected>
     </Stack>
   );

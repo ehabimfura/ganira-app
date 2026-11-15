@@ -1,6 +1,7 @@
 // End-to-end check of the app's screens in headless Chromium.
 // Needs the API (cd api && npm start) and the web build (cd app && npx expo start --web) running.
 import { chromium } from 'playwright';
+import { execFileSync } from 'node:child_process';
 import { mkdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
@@ -66,17 +67,20 @@ const enabled = async (name) => {
 const visibleText = async (t) => (await page.getByText(t, { exact: false }).filter({ visible: true }).count()) > 0;
 
 // Speaks and expects every word green. Chrome's fake microphone sometimes sends silence on
-// the very first recording of a fresh browser, so one "Try again" is allowed, as a learner would.
+// a recording, so up to two "Try again" taps are allowed, as a learner would.
 async function speakUntilHeard(label) {
   const heard = page.getByLabel(label).filter({ visible: true }).first();
   await speak();
-  if (await heard.isVisible()) return;
-  await page.getByRole('button', { name: 'Try again', exact: true }).filter({ visible: true }).first().click();
-  const again = page.getByRole('button', { name: 'Try again', exact: true }).filter({ visible: true }).first();
-  await again.waitFor({ timeout: 3500 }).catch(async () => {
-    if (await shown('Stop')) await tap('Stop');
-  });
-  await heard.waitFor({ timeout: 20000 });
+  for (let retry = 0; retry < 2 && !(await heard.isVisible()); retry++) {
+    await tap('Try again');
+    const again = page.getByRole('button', { name: 'Try again', exact: true }).filter({ visible: true }).first();
+    await page.waitForTimeout(500);
+    await again.waitFor({ timeout: 3500 }).catch(async () => {
+      if (await shown('Stop')) await tap('Stop');
+    });
+    await again.waitFor({ timeout: 20000 });
+  }
+  await heard.waitFor({ timeout: 5000 });
 }
 
 // Match pairs by trying each meaning for each phrase; wrong tries flash red and are allowed.
@@ -325,6 +329,8 @@ await check('a child has no sign-out; finishing level 1 opens level 2 only', asy
   await text('Now you can:');
   await page.screenshot({ path: `${SHOTS}12-lesson-done.png` });
   await backToPath('Ineza');
+  // Finishing a level starts the streak; the flame lights up for today.
+  await page.getByLabel('Streak: 1 day, practised today').filter({ visible: true }).first().waitFor();
   if (await isLocked('Lesson 2: Hi and thanks')) throw new Error('level 2 still locked');
   if (!(await isLocked('Practice 3: Practice: greetings'))) throw new Error('level 3 open too early');
 });
@@ -378,6 +384,27 @@ await check('levels 2-7 teach the ride, then the roleplay ends with "vayo tugend
   await tap('Finish');
   await text('Roleplay complete');
   await page.screenshot({ path: `${SHOTS}13b-celebration.png` });
+  await backToPath('Ineza');
+});
+
+await check('three days later the daily review brings phrases back, and finishing it keeps the streak', async () => {
+  // Move this child's practice three days into the past, as if time had passed
+  // (the local test database only; the MySQL client comes with Homebrew's mysql@8.4).
+  execFileSync('/opt/homebrew/opt/mysql@8.4/bin/mysql', [
+    `-u${env.DB_USER}`, `-h${env.DB_HOST}`, `-P${env.DB_PORT}`, env.DB_NAME, '-e',
+    `UPDATE phrase_memory m JOIN learners l ON l.id = m.learner_id
+        SET m.last_practised_at = m.last_practised_at - INTERVAL 3 DAY
+      WHERE l.nickname = 'Ineza' AND l.created_at > NOW() - INTERVAL 1 HOUR`,
+  ], { env: { ...process.env, MYSQL_PWD: env.DB_PASSWORD } });
+  await page.reload();
+  await text('Muraho, Ineza!');
+  const card = page.getByRole('button', { name: /^Daily review: \d+ phrases?$/ }).filter({ visible: true }).first();
+  await card.waitFor({ timeout: 10000 });
+  await page.screenshot({ path: `${SHOTS}14-review-card.png` });
+  await card.click();
+  await finishLevel('Review complete');
+  await text('phrases refreshed');
+  await page.screenshot({ path: `${SHOTS}15-review-done.png` });
   await backToPath('Ineza');
 });
 

@@ -1,10 +1,15 @@
 import { Router } from "express";
+import { z } from "zod";
 import type { RowDataPacket } from "mysql2/promise";
 import { requireSession, type SessionInfo } from "../auth/session.js";
 import type { Database } from "../db.js";
+import { recordPractice, resultSchema } from "../practice/store.js";
 import { previousLesson } from "./catalog.js";
 
-export function lessonRoutes(db: Database) {
+// The lesson's answers, for the spaced review. Optional: older app versions send none.
+const completeSchema = z.object({ results: z.array(resultSchema).max(60).optional() });
+
+export function lessonRoutes(db: Database, now: () => Date) {
   const router = Router();
   router.use("/lessons", requireSession(db));
 
@@ -17,6 +22,11 @@ export function lessonRoutes(db: Database) {
       return;
     }
 
+    const parsed = completeSchema.safeParse(req.body ?? {});
+    if (!parsed.success) {
+      res.status(400).json({ error: "INVALID_INPUT" });
+      return;
+    }
     const { lessonId } = req.params;
     const previous = previousLesson(lessonId);
     if (previous === undefined) {
@@ -39,6 +49,7 @@ export function lessonRoutes(db: Database) {
       learnerId,
       lessonId,
     ]);
+    await recordPractice(db, learnerId, parsed.data.results ?? [], now());
     res.status(204).end();
   });
 

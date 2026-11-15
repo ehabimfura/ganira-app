@@ -61,6 +61,7 @@ describe("sign-up", () => {
         dailyGoalMinutes: 10,
         hasPin: false,
         completedLessons: [],
+        streak: { days: 0, practisedToday: false },
       },
     ]);
     expect(profile.body.activeProfileId).toBe(profile.body.profiles[0].id);

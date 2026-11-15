@@ -8,29 +8,49 @@ import { PairsExercise } from '@/components/lesson/pairs-exercise';
 import { IntroduceExercise, RecallExercise } from '@/components/lesson/speak-exercise';
 import { Ride } from '@/components/ride';
 import type { Exercise } from '@/content/unit1';
+import type { PracticeResult } from '@/lib/practice';
 import { colors, font, fonts, icon, palette, space } from '@/theme';
 
 type Item = { exercise: Exercise; retry: boolean };
 
+// The phrases an exercise tested, with how it went, for the spaced review.
+// A new phrase counts as a first success; a talk with the motari tests nothing new.
+function resultsOf(exercise: Exercise, correct: boolean): PracticeResult[] {
+  switch (exercise.kind) {
+    case 'introduce':
+      return [{ phrase: exercise.line.text, correct: true }];
+    case 'pairs':
+      return exercise.lines.map((line) => ({ phrase: line.text, correct }));
+    case 'talk':
+      return [];
+    default:
+      return [{ phrase: exercise.line.text, correct }];
+  }
+}
+
 // Runs a lesson's exercises one after another. An exercise answered wrongly comes back
-// once at the end, marked "Previous mistake", as Duolingo does.
+// once at the end, marked "Previous mistake", as Duolingo does. Only first answers count
+// toward the spaced review.
 export function LessonRunner({
   exercises,
   onFinish,
   onQuit,
 }: {
   exercises: Exercise[];
-  onFinish: () => void;
+  onFinish: (results: PracticeResult[]) => void;
   onQuit: () => void;
 }) {
   const [queue, setQueue] = useState<Item[]>(() => exercises.map((exercise) => ({ exercise, retry: false })));
   const [index, setIndex] = useState(0);
+  const [results, setResults] = useState<PracticeResult[]>([]);
   const item = queue[index];
 
   const done = (correct = true) => {
+    const answered = item.retry ? results : [...results, ...resultsOf(item.exercise, correct)];
+    setResults(answered);
     const next = !correct && !item.retry ? [...queue, { exercise: item.exercise, retry: true }] : queue;
     if (index + 1 >= next.length) {
-      onFinish();
+      onFinish(answered);
       return;
     }
     setQueue(next);
@@ -55,7 +75,7 @@ export function LessonRunner({
 function ExerciseView({ exercise, onDone }: { exercise: Exercise; onDone: (correct?: boolean) => void }) {
   switch (exercise.kind) {
     case 'introduce':
-      return <IntroduceExercise line={exercise.line} onDone={onDone} />;
+      return <IntroduceExercise line={exercise.line} onDone={() => onDone()} />;
     case 'listen':
       return <ListenExercise line={exercise.line} wrong={exercise.wrong} speaker={exercise.speaker} onDone={onDone} />;
     case 'read':
@@ -70,7 +90,7 @@ function ExerciseView({ exercise, onDone }: { exercise: Exercise; onDone: (corre
       return (
         <View style={styles.flex}>
           <Text style={styles.talk}>Now try it with the motari</Text>
-          <Ride turns={exercise.turns} onFinish={onDone} finishLabel="Continue" />
+          <Ride turns={exercise.turns} onFinish={() => onDone()} finishLabel="Continue" />
         </View>
       );
   }

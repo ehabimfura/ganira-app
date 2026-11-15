@@ -2,6 +2,7 @@ import express, { type NextFunction, type Request, type Response } from "express
 import { authRoutes } from "./auth/routes.js";
 import type { Database } from "./db.js";
 import { lessonRoutes } from "./lessons/routes.js";
+import { practiceRoutes } from "./practice/routes.js";
 import { profileRoutes } from "./profiles/routes.js";
 import { noSpeechService, type Transcribe } from "./speech/client.js";
 import { speechRoutes } from "./speech/routes.js";
@@ -12,9 +13,11 @@ export interface AppOptions {
   corsOrigins?: string[];
   // Turns a recording into text (the speech service). Without it, speech checks answer "unavailable".
   transcribe?: Transcribe;
+  // The current time; tests move it forward to check streaks and reviews.
+  now?: () => Date;
 }
 
-export function createApp(db: Database, { corsOrigins = [], transcribe = noSpeechService }: AppOptions = {}) {
+export function createApp(db: Database, { corsOrigins = [], transcribe = noSpeechService, now = () => new Date() }: AppOptions = {}) {
   const app = express();
 
   app.use((req, res, next) => {
@@ -47,9 +50,10 @@ export function createApp(db: Database, { corsOrigins = [], transcribe = noSpeec
     }
   });
 
-  app.use(authRoutes(db));
+  app.use(authRoutes(db, now));
   app.use(profileRoutes(db));
-  app.use(lessonRoutes(db));
+  app.use(lessonRoutes(db, now));
+  app.use(practiceRoutes(db, now));
 
   // Anything unexpected: log the details here, send the phone a plain message.
   app.use((error: unknown, _req: Request, res: Response, _next: NextFunction) => {

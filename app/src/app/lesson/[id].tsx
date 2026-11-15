@@ -11,6 +11,7 @@ import { Body, Button, ErrorText, Screen, Title } from '@/components/ui';
 import { findLevel, LEVELS } from '@/content/unit1';
 import { apiRequest, messageFor } from '@/lib/api';
 import { returnHome } from '@/lib/navigation';
+import type { PracticeResult } from '@/lib/practice';
 import { useCelebration } from '@/lib/sounds';
 import { useSession } from '@/lib/session';
 import { colors, font, fonts, palette, space } from '@/theme';
@@ -24,6 +25,8 @@ export default function LessonScreen() {
   const celebrate = useCelebration();
   const [stage, setStage] = useState<Stage>('goal');
   const [error, setError] = useState<string | null>(null);
+  // Kept so "Try again" after a failed save still sends the lesson's answers.
+  const [answers, setAnswers] = useState<PracticeResult[]>([]);
 
   if (!level) {
     return (
@@ -37,11 +40,12 @@ export default function LessonScreen() {
   const KindIcon = LEVEL_ICONS[level.kind];
 
   // Save first, then the celebration, so it only plays once progress is safe.
-  async function finish() {
+  async function finish(results: PracticeResult[] = answers) {
+    setAnswers(results);
     setStage('saving');
     setError(null);
     try {
-      await apiRequest(`/lessons/${level!.id}/complete`, { method: 'POST', token });
+      await apiRequest(`/lessons/${level!.id}/complete`, { method: 'POST', token, body: { results } });
       await refresh();
       celebrate();
       setStage('done');
@@ -86,7 +90,7 @@ export default function LessonScreen() {
       <Screen>
         <Title>{level.title}</Title>
         <ErrorText message={error} />
-        <Button label="Try again" onPress={finish} />
+        <Button label="Try again" onPress={() => finish()} />
       </Screen>
     );
   }
@@ -116,7 +120,7 @@ export default function LessonScreen() {
         <View style={styles.flex}>
           <LessonHeader progress={0} onQuit={returnHome} />
           <Body>{level.intro}</Body>
-          <Ride turns={level.turns} onFinish={finish} />
+          <Ride turns={level.turns} onFinish={() => finish()} />
         </View>
       ) : (
         <LessonRunner exercises={level.exercises} onFinish={finish} onQuit={returnHome} />

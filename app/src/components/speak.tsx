@@ -37,7 +37,7 @@ type Stage = 'idle' | 'recording' | 'checking' | 'done';
 // The learner says the phrase; the words the speech check heard turn green.
 // Every word green plays the chime and success vibration. There is no pass mark:
 // after any try the learner may move on (onTried), or try again.
-export function Speak({ expected, onTried }: { expected: string; onTried: () => void }) {
+export function Speak({ expected, onTried }: { expected: string; onTried: (allHeard: boolean) => void }) {
   const { token } = useSession();
   const recorder = useAudioRecorder(SPEECH_RECORDING);
   const recorderState = useAudioRecorderState(recorder, 100);
@@ -70,10 +70,10 @@ export function Speak({ expected, onTried }: { expected: string; onTried: () => 
     }
   });
 
-  const finishTry = (message: string | null) => {
+  const finishTry = (message: string | null, allHeard = false) => {
     setError(message);
     setStage('done');
-    onTried();
+    onTried(allHeard);
   };
 
   async function start() {
@@ -110,7 +110,7 @@ export function Speak({ expected, onTried }: { expected: string; onTried: () => 
       setResult(answer);
       if (answer.allHeard) success();
       else haptics.tap();
-      finishTry(null);
+      finishTry(null, answer.allHeard);
     } catch (e) {
       console.warn('Speech check failed', e);
       finishTry(messageFor(e));

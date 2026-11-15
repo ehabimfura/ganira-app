@@ -11,8 +11,10 @@ export interface Profile {
   level: 'NEW' | 'FEW_WORDS' | 'SHORT_CHAT' | null;
   dailyGoalMinutes: number;
   hasPin: boolean;
-  // Lesson ids finished by this profile, in the order they were finished.
+  // Level ids finished by this profile, in path order.
   completedLessons: string[];
+  // Days in a row with practice (Kigali days), and whether today counts yet.
+  streak: { days: number; practisedToday: boolean };
 }
 
 export interface Me {

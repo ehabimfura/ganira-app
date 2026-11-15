@@ -37,10 +37,12 @@ export function IntroduceExercise({ line, onDone }: { line: Line; onDone: () => 
 
 // Recall: only the English shows. Saying it from memory is what makes it stick
 // (retrieval practice). A learner who is stuck can hear the answer first.
-export function RecallExercise({ line, onDone }: { line: Line; onDone: () => void }) {
+// Remembered means every word was heard before the learner asked to hear the answer.
+export function RecallExercise({ line, onDone }: { line: Line; onDone: (remembered: boolean) => void }) {
   const play = useClipPlayer();
   const [revealed, setRevealed] = useState(false);
   const [tried, setTried] = useState(false);
+  const [remembered, setRemembered] = useState(false);
 
   return (
     <View style={styles.flex}>
@@ -52,7 +54,8 @@ export function RecallExercise({ line, onDone }: { line: Line; onDone: () => voi
       </View>
       <Speak
         expected={line.text}
-        onTried={() => {
+        onTried={(allHeard) => {
+          if (!tried) setRemembered(allHeard && !revealed);
           setTried(true);
           setRevealed(true);
         }}
@@ -68,7 +71,7 @@ export function RecallExercise({ line, onDone }: { line: Line; onDone: () => voi
           }}
         />
       ) : null}
-      {tried && <Button label="Continue" variant="success" onPress={onDone} />}
+      {tried && <Button label="Continue" variant="success" onPress={() => onDone(remembered)} />}
     </View>
   );
 }

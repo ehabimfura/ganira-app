@@ -305,3 +305,43 @@ export function findLevel(id: string): Level | undefined {
 export function isUnlocked(index: number, completed: readonly string[]): boolean {
   return index === 0 || completed.includes(LEVELS[index - 1].id);
 }
+
+// Every phrase in the unit, for the daily review: the API names due phrases by their
+// Kinyarwanda text, and the review builds its exercises from these lines.
+const LEARNER_LINES: Line[] = [...Object.values(me), ...Object.values(part)];
+const MOTARI_LINES: Line[] = Object.values(motari);
+
+export function findReviewLine(text: string): { line: Line; motari: boolean } | undefined {
+  const mine = LEARNER_LINES.find((l) => l.text === text);
+  if (mine) return { line: mine, motari: false };
+  const theirs = MOTARI_LINES.find((l) => l.text === text);
+  return theirs ? { line: theirs, motari: true } : undefined;
+}
+
+// Two other phrases to offer as wrong answers, chosen by a fixed rule so a review looks
+// the same each time for the same phrases.
+function othersThan(line: Line, pool: Line[]): Line[] {
+  const rest = pool.filter((l) => l.meaning !== line.meaning);
+  const start = line.text.length % rest.length;
+  const picked: Line[] = [];
+  for (let i = 0; i < rest.length && picked.length < 2; i++) {
+    const candidate = rest[(start + i * 3) % rest.length];
+    if (!picked.some((p) => p.meaning === candidate.meaning)) picked.push(candidate);
+  }
+  return picked;
+}
+
+// The daily review: one exercise per due phrase, weakest first, mixing listening,
+// reading and saying it from memory. The motari's lines are always listening.
+export function reviewExercises(phrases: string[]): Exercise[] {
+  return phrases.flatMap((text, i): Exercise[] => {
+    const found = findReviewLine(text);
+    if (!found) return [];
+    const { line } = found;
+    if (found.motari) return [hearMotari(line, ...othersThan(line, MOTARI_LINES).map((l) => l.meaning))];
+    const kind = i % 3;
+    if (kind === 0) return [listen(line, ...othersThan(line, LEARNER_LINES).map((l) => l.meaning))];
+    if (kind === 1) return [read(line, ...othersThan(line, LEARNER_LINES))];
+    return [recall(line)];
+  });
+}

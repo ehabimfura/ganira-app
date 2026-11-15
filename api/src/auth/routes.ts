@@ -2,6 +2,7 @@ import { Router, type Response } from "express";
 import type { ResultSetHeader, RowDataPacket } from "mysql2/promise";
 import { z } from "zod";
 import { LESSON_IDS } from "../lessons/catalog.js";
+import { streaksFor } from "../practice/store.js";
 import type { Database } from "../db.js";
 import { ADULT_PATH, learnerOnboarding } from "../onboarding.js";
 import { isAdult } from "./age.js";
@@ -65,7 +66,7 @@ function pathPosition(id: string): number {
   return index === -1 ? LESSON_IDS.length : index;
 }
 
-export function authRoutes(db: Database) {
+export function authRoutes(db: Database, now: () => Date = () => new Date()) {
   const router = Router();
   const signinLimiter = createRateLimiter(SIGNIN_MAX_ATTEMPTS, SIGNIN_WINDOW_MS);
 
@@ -179,6 +180,7 @@ export function authRoutes(db: Database) {
         .filter((p) => p.learner_id === learnerId)
         .map((p) => p.lesson_id as string)
         .sort((a, b) => pathPosition(a) - pathPosition(b));
+    const streakOf = await streaksFor(db, session.accountId, now());
     res.json({
       account: accounts[0],
       profiles: learners.map((l) => ({
@@ -191,6 +193,7 @@ export function authRoutes(db: Database) {
         dailyGoalMinutes: l.daily_goal_minutes,
         hasPin: Boolean(l.has_pin),
         completedLessons: completedBy(l.id),
+        streak: streakOf(l.id),
       })),
       activeProfileId: session.activeLearnerId,
     });
