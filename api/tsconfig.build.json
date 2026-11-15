@@ -1,0 +1,6 @@
+{
+  // Compiles src/ to plain JavaScript in dist/, which is what runs on Azure.
+  "extends": "./tsconfig.json",
+  "compilerOptions": { "noEmit": false, "rootDir": "src", "outDir": "dist" },
+  "include": ["src"]
+}

@@ -27,3 +27,4 @@ __pycache__/
 speech/model/
 speech/.venv/
 .vitest/
+dist/
