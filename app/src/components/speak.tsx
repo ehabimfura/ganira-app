@@ -119,6 +119,16 @@ export function Speak({ expected, onTried }: { expected: string; onTried: (allHe
 
   return (
     <View style={styles.box}>
+      {/* While the learner speaks and the check runs, the phrase shows in grey: nothing is heard yet. */}
+      {!result && (stage === 'recording' || stage === 'checking') && (
+        <Text style={styles.words} accessibilityLabel={`Your phrase: ${expected}`}>
+          {expected.split(/\s+/).map((word, i) => (
+            <Text key={i} style={styles.pending}>
+              {word}{' '}
+            </Text>
+          ))}
+        </Text>
+      )}
       {result && (
         <Text
           style={styles.words}
@@ -201,6 +211,7 @@ const styles = StyleSheet.create({
   words: { fontSize: font.body + 4, fontFamily: fonts.regular, textAlign: 'center' },
   heard: { color: colors.success, fontFamily: fonts.bold },
   missed: { color: colors.muted, fontFamily: fonts.semibold, opacity: 0.55 },
+  pending: { color: colors.muted, fontFamily: fonts.semibold, opacity: 0.4 },
   dots: { flexDirection: 'row', justifyContent: 'center', alignItems: 'flex-end', gap: 10, height: 40, paddingBottom: 4 },
   dot: { width: 12, height: 12, borderRadius: 6, backgroundColor: colors.success },
   dotChecking: { backgroundColor: colors.borderStrong },

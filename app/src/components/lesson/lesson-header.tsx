@@ -1,6 +1,7 @@
 import { X } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { Animated, Modal, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, IconButton } from '@/components/ui';
 import { colors, font, fonts, icon, palette, radiusLarge, space } from '@/theme';
 
@@ -9,13 +10,16 @@ import { colors, font, fonts, icon, palette, radiusLarge, space } from '@/theme'
 export function LessonHeader({ progress, onQuit }: { progress: number; onQuit: () => void }) {
   const [asking, setAsking] = useState(false);
   const [width] = useState(() => new Animated.Value(progress));
+  // The lesson screen does not leave room for the status bar or the Dynamic Island, so the
+  // header makes that room itself.
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     Animated.timing(width, { toValue: progress, duration: 350, useNativeDriver: false }).start();
   }, [progress, width]);
 
   return (
-    <View style={styles.header}>
+    <View style={[styles.header, { paddingTop: insets.top + space.sm }]}>
       <IconButton icon={X} label="Quit lesson" size={icon.large - 2} onPress={() => setAsking(true)} />
       <View
         style={styles.track}
