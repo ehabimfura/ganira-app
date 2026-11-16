@@ -1,6 +1,12 @@
 // Talks to the speech service (speech/server.py), which turns a recording into text.
 
-export type Transcribe = (audio: Buffer) => Promise<string>;
+export interface SpeechAnswer {
+  transcript: string;
+  // One entry per expected word, when the service scored the recording against the phrase.
+  heard?: boolean[];
+}
+
+export type Transcribe = (audio: Buffer, expected: string) => Promise<SpeechAnswer>;
 
 export class UnreadableAudioError extends Error {
   constructor() {
@@ -14,18 +20,22 @@ const TIMEOUT_MS = 20000;
 export function createSpeechClient(baseUrl: string, key?: string): Transcribe {
   const headers: Record<string, string> = { "Content-Type": "application/octet-stream" };
   if (key) headers["X-Speech-Key"] = key;
-  return async (audio) => {
+  return async (audio, expected) => {
+    // The phrase travels URL-encoded, so accented or non-Latin text can't break the header.
     const res = await fetch(`${baseUrl}/transcribe`, {
       method: "POST",
-      headers,
+      headers: { ...headers, "X-Expected": encodeURIComponent(expected) },
       body: new Uint8Array(audio),
       signal: AbortSignal.timeout(TIMEOUT_MS),
     });
     if (res.status === 400) throw new UnreadableAudioError();
     if (!res.ok) throw new Error(`Speech service answered ${res.status}`);
-    const data = (await res.json()) as { text?: unknown };
+    const data = (await res.json()) as { text?: unknown; words?: unknown };
     if (typeof data.text !== "string") throw new Error("Speech service sent no text");
-    return data.text;
+    const heard = Array.isArray(data.words)
+      ? data.words.map((w: { heard?: unknown }) => w.heard === true)
+      : undefined;
+    return { transcript: data.text, heard };
   };
 }
 

@@ -125,5 +125,39 @@ class OneAtATimeTest(unittest.TestCase):
         self.assertEqual(transcriber.most, 1)
 
 
+class ScoringTranscriber:
+    def transcribe(self, audio):
+        return "muraho"
+
+    def score(self, audio, expected):
+        return "muraho", [0.0, 4.0]  # the first word fits the audio, the second does not
+
+
+class ExpectedPhraseTest(unittest.TestCase):
+    """With the X-Expected header, the answer says which words fit the audio, not only the text."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.server = ThreadingHTTPServer(("127.0.0.1", 0), make_handler(lambda: ScoringTranscriber()))
+        threading.Thread(target=cls.server.serve_forever, daemon=True).start()
+        cls.url = f"http://127.0.0.1:{cls.server.server_port}/transcribe"
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.server.shutdown()
+        cls.server.server_close()
+
+    def test_each_expected_word_says_whether_it_was_heard(self):
+        request = urllib.request.Request(self.url, data=WAV, headers={"X-Expected": "Muraho%20mwiriwe"}, method="POST")
+        with urllib.request.urlopen(request) as response:
+            body = json.load(response)
+        self.assertEqual(body["text"], "muraho")
+        self.assertEqual([w["heard"] for w in body["words"]], [True, False])
+
+    def test_without_the_header_the_answer_is_text_only(self):
+        with urllib.request.urlopen(urllib.request.Request(self.url, data=WAV, method="POST")) as response:
+            self.assertEqual(json.load(response), {"text": "muraho"})
+
+
 if __name__ == "__main__":
     unittest.main()

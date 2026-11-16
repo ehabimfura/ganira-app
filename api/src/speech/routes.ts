@@ -3,7 +3,7 @@ import { z } from "zod";
 import { createRateLimiter } from "../auth/rate-limit.js";
 import { requireSession, type SessionInfo } from "../auth/session.js";
 import type { Database } from "../db.js";
-import { UnreadableAudioError, type Transcribe } from "./client.js";
+import { UnreadableAudioError, type SpeechAnswer, type Transcribe } from "./client.js";
 import { matchWords } from "./match.js";
 
 // A 10-second phone recording is well under 1 MB; base64 makes it about a third bigger.
@@ -39,10 +39,10 @@ export function speechRoutes(db: Database, transcribe: Transcribe) {
       return;
     }
 
-    let transcript: string;
+    let answer: SpeechAnswer;
     const started = Date.now();
     try {
-      transcript = await transcribe(Buffer.from(parsed.data.audio, "base64"));
+      answer = await transcribe(Buffer.from(parsed.data.audio, "base64"), parsed.data.expected);
       // Timing only: the transcript is a child's speech and is never logged.
       console.info(`Speech check answered in ${Date.now() - started} ms`);
     } catch (error) {
@@ -56,8 +56,12 @@ export function speechRoutes(db: Database, transcribe: Transcribe) {
       return;
     }
 
-    const words = matchWords(parsed.data.expected, transcript);
-    res.json({ words, allHeard: words.every((w) => w.heard), transcript });
+    // The service's fit score is what counts when it is there; the text match is the fallback.
+    const shown = parsed.data.expected.trim().split(/\s+/);
+    const words = answer.heard
+      ? shown.map((word, i) => ({ word, heard: answer.heard?.[i] ?? false }))
+      : matchWords(parsed.data.expected, answer.transcript);
+    res.json({ words, allHeard: words.every((w) => w.heard), transcript: answer.transcript });
   });
 
   return router;

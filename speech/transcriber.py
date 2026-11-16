@@ -16,6 +16,7 @@ import numpy as np
 import onnxruntime as ort
 
 from features import speech_features
+from fit import word_gaps
 
 SAMPLE_RATE = 16000
 # Which model file in the model folder to load (see tools/quantize.py).
@@ -124,7 +125,8 @@ class Transcriber:
         noise = np.random.default_rng(0).normal(0.0, 0.05, SAMPLE_RATE).astype(np.float32)
         self.transcribe(noise)
 
-    def transcribe(self, audio: np.ndarray) -> str:
+    def _logprobs(self, audio: np.ndarray) -> np.ndarray:
+        """The model's log-odds of each symbol for every frame of the trimmed recording."""
         audio = trim_silence(audio)
         started = time.perf_counter()
         # The input the model was trained with: log-mel, normalised, 2 frames stacked (features.py).
@@ -138,7 +140,15 @@ class Transcriber:
         self.last_timing = f"features {(featured - started) * 1000:.0f} ms, model {(done - featured) * 1000:.0f} ms"
         if self.profiling:
             self.last_timing += "; " + self.profile_summary()
-        return self._greedy_ctc(logprobs[0][: lengths[0]].argmax(axis=-1))
+        return logprobs[0][: lengths[0]]
+
+    def transcribe(self, audio: np.ndarray) -> str:
+        return self._greedy_ctc(self._logprobs(audio).argmax(axis=-1))
+
+    def score(self, audio: np.ndarray, expected: str) -> tuple[str, list[float]]:
+        """What was heard, and how far each expected word is from what was said (see fit.py)."""
+        logprobs = self._logprobs(audio)
+        return self._greedy_ctc(logprobs.argmax(axis=-1)), word_gaps(logprobs, expected)
 
     def profile_summary(self) -> str:
         """The model step types that took longest in the first run, from ONNX Runtime's profile."""

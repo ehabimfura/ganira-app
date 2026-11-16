@@ -9,12 +9,14 @@ const db = createDatabase(testDbSettings);
 const AUDIO = Buffer.from("pretend this is a recording").toString("base64");
 
 // The real speech service is a separate program; these tests swap in a stand-in.
-let nextTranscript: Transcribe = async () => "muraho";
+let nextTranscript: Transcribe = async () => ({ transcript: "muraho" });
 let received: Buffer | null = null;
+let receivedPhrase = "";
 const app = createApp(db, {
-  transcribe: async (audio) => {
+  transcribe: async (audio, expected) => {
     received = audio;
-    return nextTranscript(audio);
+    receivedPhrase = expected;
+    return nextTranscript(audio, expected);
   },
 });
 
@@ -40,15 +42,26 @@ afterAll(() => db.close());
 
 describe("speech check", () => {
   test("the recording reaches the speech service, and the answer says which words were heard", async () => {
-    nextTranscript = async () => "muraho";
+    nextTranscript = async () => ({ transcript: "muraho" });
     const res = await check({ expected: "Muraho", audio: AUDIO });
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ words: [{ word: "Muraho", heard: true }], allHeard: true, transcript: "muraho" });
     expect(received?.toString()).toBe("pretend this is a recording");
+    expect(receivedPhrase).toBe("Muraho");
+  });
+
+  test("the speech service's per-word fit decides which words were heard, even if the text differs", async () => {
+    nextTranscript = async () => ({ transcript: "egemera kuri", heard: [true, false] });
+    const res = await check({ expected: "Remera kuri", audio: AUDIO });
+    expect(res.body.words).toEqual([
+      { word: "Remera", heard: true },
+      { word: "kuri", heard: false },
+    ]);
+    expect(res.body.allHeard).toBe(false);
   });
 
   test("some words heard is not allHeard", async () => {
-    nextTranscript = async () => "bite";
+    nextTranscript = async () => ({ transcript: "bite" });
     const res = await check({ expected: "Bite se", audio: AUDIO });
     expect(res.body.allHeard).toBe(false);
     expect(res.body.words).toEqual([
@@ -82,7 +95,7 @@ describe("speech check", () => {
   });
 
   test("a recording up to about a megabyte is accepted, larger ones are refused", async () => {
-    nextTranscript = async () => "muraho";
+    nextTranscript = async () => ({ transcript: "muraho" });
     const big = Buffer.alloc(900_000).toString("base64");
     expect((await check({ expected: "Muraho", audio: big })).status).toBe(200);
     const huge = Buffer.alloc(3_000_000).toString("base64");
@@ -90,7 +103,7 @@ describe("speech check", () => {
   });
 
   test("the first lesson works before sign-up, so no session is needed", async () => {
-    nextTranscript = async () => "muraho";
+    nextTranscript = async () => ({ transcript: "muraho" });
     const res = await request(app).post("/speech/check").send({ expected: "Muraho", audio: AUDIO });
     expect(res.status).toBe(200);
     expect(res.body.allHeard).toBe(true);

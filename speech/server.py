@@ -17,7 +17,9 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 from model_files import ensure_model
+from fit import HEARD_GAP
 from transcriber import AudioError, Transcriber, decode_audio
+from urllib.parse import unquote
 
 HOST = os.environ.get("SPEECH_HOST", "127.0.0.1")
 PORT = int(os.environ.get("SPEECH_PORT", "8000"))
@@ -110,10 +112,16 @@ def make_handler(get_transcriber: Callable[[], Transcriber | None], key: str | N
                 log.info("Unreadable audio: %s", error)
                 self._send(400, {"error": "BAD_AUDIO"})
                 return
+            # Optional: the phrase the learner was asked to say, URL-encoded. When it is sent, the
+            # answer also says how well each word fits the audio (fit.py); otherwise it is text only.
+            expected = unquote(self.headers.get("X-Expected", "")).strip()
             try:
                 with one_at_a_time:
                     started = time.perf_counter()
-                    text = transcriber.transcribe(audio)
+                    if expected:
+                        text, gaps = transcriber.score(audio, expected)
+                    else:
+                        text = transcriber.transcribe(audio)
                 log.info(
                     "Transcribed %.1f s of audio in %d ms (%s); %s",
                     len(audio) / 16000,
@@ -121,7 +129,11 @@ def make_handler(get_transcriber: Callable[[], Transcriber | None], key: str | N
                     getattr(transcriber, "last_timing", ""),
                     memory_report(),
                 )
-                self._send(200, {"text": text})
+                if expected:
+                    words = [{"heard": gap <= HEARD_GAP, "gap": round(gap, 3)} for gap in gaps]
+                    self._send(200, {"text": text, "words": words})
+                else:
+                    self._send(200, {"text": text})
             except Exception:  # noqa: BLE001 - log everything, tell the API only that it failed
                 log.exception("Transcription failed")
                 self._send(500, {"error": "TRANSCRIBE_FAILED"})
