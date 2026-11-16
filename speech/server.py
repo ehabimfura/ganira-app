@@ -140,8 +140,10 @@ def main() -> None:
 
     def load() -> None:
         ensure_model(MODEL_DIR)
-        loaded.append(Transcriber(MODEL_DIR))
-        log.info("Model loaded; %s", memory_report())
+        transcriber = Transcriber(MODEL_DIR)
+        transcriber.warm_up()  # before it is published, so no learner waits for the first-run cost
+        loaded.append(transcriber)
+        log.info("Model loaded and warmed up; %s", memory_report())
 
     threading.Thread(target=load, daemon=True).start()
     server = ThreadingHTTPServer((HOST, PORT), make_handler(lambda: loaded[0] if loaded else None, KEY))

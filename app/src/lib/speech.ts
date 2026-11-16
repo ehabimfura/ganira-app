@@ -17,8 +17,17 @@ async function recordingAsBase64(uri: string): Promise<string> {
   });
 }
 
+// The API gives the speech service 20 s before it answers SPEECH_UNAVAILABLE. The app must wait
+// longer than that, or it reports "Can't reach Ganira" while the answer is still on its way.
+const SPEECH_TIMEOUT_MS = 25000;
+
 // Sends what the learner said to the speech check; the answer says which words were heard.
 export async function checkSpeech(uri: string, expected: string, token: string | null): Promise<SpeechResult> {
   const audio = await recordingAsBase64(uri);
-  return apiRequest<SpeechResult>('/speech/check', { method: 'POST', token, body: { expected, audio } });
+  return apiRequest<SpeechResult>('/speech/check', {
+    method: 'POST',
+    token,
+    body: { expected, audio },
+    timeoutMs: SPEECH_TIMEOUT_MS,
+  });
 }

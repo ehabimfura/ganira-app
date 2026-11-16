@@ -114,6 +114,16 @@ class Transcriber:
             token, index = line.rsplit(" ", 1)
             self.vocab[int(index)] = token
 
+    def warm_up(self) -> None:
+        """One run on a short noise clip, before the model is marked ready.
+
+        The first run after loading is the slowest (ONNX Runtime sets up its memory then), so
+        this makes the first learner's check as fast as the rest. The noise is not a word, so
+        the result is thrown away.
+        """
+        noise = np.random.default_rng(0).normal(0.0, 0.05, SAMPLE_RATE).astype(np.float32)
+        self.transcribe(noise)
+
     def transcribe(self, audio: np.ndarray) -> str:
         audio = trim_silence(audio)
         started = time.perf_counter()

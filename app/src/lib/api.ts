@@ -58,7 +58,7 @@ export function messageFor(error: unknown): string {
 
 export async function apiRequest<T>(
   path: string,
-  options: { method?: string; body?: unknown; token?: string | null } = {},
+  options: { method?: string; body?: unknown; token?: string | null; timeoutMs?: number } = {},
 ): Promise<T> {
   if (!API_URL) throw new ApiError('NOT_CONFIGURED', 0);
 
@@ -72,7 +72,7 @@ export async function apiRequest<T>(
       method: options.method ?? 'GET',
       headers,
       body: options.body === undefined ? undefined : JSON.stringify(options.body),
-      signal: AbortSignal.timeout(TIMEOUT_MS),
+      signal: AbortSignal.timeout(options.timeoutMs ?? TIMEOUT_MS),
     });
   } catch {
     throw new ApiError('NETWORK', 0);

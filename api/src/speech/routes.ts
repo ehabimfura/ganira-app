@@ -40,9 +40,13 @@ export function speechRoutes(db: Database, transcribe: Transcribe) {
     }
 
     let transcript: string;
+    const started = Date.now();
     try {
       transcript = await transcribe(Buffer.from(parsed.data.audio, "base64"));
+      // Timing only: the transcript is a child's speech and is never logged.
+      console.info(`Speech check answered in ${Date.now() - started} ms`);
     } catch (error) {
+      console.info(`Speech check failed after ${Date.now() - started} ms`);
       if (error instanceof UnreadableAudioError) {
         res.status(400).json({ error: "AUDIO_UNREADABLE" });
         return;
