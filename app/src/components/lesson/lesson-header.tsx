@@ -3,20 +3,23 @@ import { useEffect, useState } from 'react';
 import { Animated, Modal, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, IconButton } from '@/components/ui';
+import { displayProgress } from '@/lib/progress';
 import { colors, font, fonts, icon, palette, radiusLarge, space } from '@/theme';
 
 // The top of every lesson, as in Duolingo: an X to leave and a bar that fills up.
 // Leaving asks first, because the lesson's progress is lost.
 export function LessonHeader({ progress, onQuit }: { progress: number; onQuit: () => void }) {
   const [asking, setAsking] = useState(false);
-  const [width] = useState(() => new Animated.Value(progress));
+  // The bar shows displayProgress(progress): it starts at 5% and speeds up early, then slows near the end.
+  const shown = displayProgress(progress);
+  const [width] = useState(() => new Animated.Value(shown));
   // The lesson screen does not leave room for the status bar or the Dynamic Island, so the
   // header makes that room itself.
   const insets = useSafeAreaInsets();
 
   useEffect(() => {
-    Animated.timing(width, { toValue: progress, duration: 350, useNativeDriver: false }).start();
-  }, [progress, width]);
+    Animated.timing(width, { toValue: shown, duration: 350, useNativeDriver: false }).start();
+  }, [shown, width]);
 
   return (
     <View style={[styles.header, { paddingTop: insets.top + space.sm }]}>
@@ -24,7 +27,7 @@ export function LessonHeader({ progress, onQuit }: { progress: number; onQuit: (
       <View
         style={styles.track}
         accessibilityRole="progressbar"
-        accessibilityValue={{ min: 0, max: 100, now: Math.round(progress * 100) }}
+        accessibilityValue={{ min: 0, max: 100, now: Math.round(shown * 100) }}
       >
         <Animated.View
           style={[styles.fill, { width: width.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }) }]}

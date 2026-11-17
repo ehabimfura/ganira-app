@@ -7,7 +7,7 @@ import {
 } from 'expo-audio';
 import { Mic, RotateCcw, Square } from 'lucide-react-native';
 import { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
+import { Animated, Easing, StyleSheet, Text, View, type TextStyle } from 'react-native';
 import { Button, ErrorText } from '@/components/ui';
 import { messageFor } from '@/lib/api';
 import { haptics } from '@/lib/haptics';
@@ -117,19 +117,16 @@ export function Speak({ expected, onTried }: { expected: string; onTried: (allHe
     }
   }
 
+  // A check where every word was heard: the phrase is replaced by "correct" and there is nothing to retry.
+  const passed = result?.allHeard === true;
+
   return (
     <View style={styles.box}>
-      {/* While the learner speaks and the check runs, the phrase shows in grey: nothing is heard yet. */}
-      {!result && (stage === 'recording' || stage === 'checking') && (
-        <Text style={styles.words} accessibilityLabel={`Your phrase: ${expected}`}>
-          {expected.split(/\s+/).map((word, i) => (
-            <Text key={i} style={styles.pending}>
-              {word}{' '}
-            </Text>
-          ))}
+      {passed ? (
+        <Text style={styles.correct} accessibilityLabel="Correct">
+          correct
         </Text>
-      )}
-      {result && (
+      ) : result ? (
         <Text
           style={styles.words}
           accessibilityLabel={`Heard: ${result.words.filter((w) => w.heard).length} of ${result.words.length} words`}
@@ -140,13 +137,15 @@ export function Speak({ expected, onTried }: { expected: string; onTried: (allHe
             </Text>
           ))}
         </Text>
-      )}
+      ) : stage === 'recording' || stage === 'checking' ? (
+        <PendingPhrase expected={expected} />
+      ) : null}
       <ErrorText message={error} />
       {stage === 'recording' && <ListeningDots level={level} />}
       {stage === 'checking' && <ListeningDots checking />}
       {stage === 'recording' ? (
         <Button label="Stop" icon={Square} onPress={stop} />
-      ) : (
+      ) : passed ? null : (
         <Button
           label={stage === 'idle' ? 'Speak' : 'Try again'}
           icon={stage === 'idle' ? Mic : RotateCcw}
@@ -154,6 +153,48 @@ export function Speak({ expected, onTried }: { expected: string; onTried: (allHe
           busy={stage === 'checking'}
           onPress={start}
         />
+      )}
+    </View>
+  );
+}
+
+const SWEEP_MS = 800;
+
+// While the learner speaks and the check runs, the phrase is grey: nothing is heard yet.
+// A lighter band wipes across it from left to right, again and again, until the result comes.
+function PendingPhrase({ expected }: { expected: string }) {
+  const [width, setWidth] = useState(0);
+  const [sweep] = useState(() => new Animated.Value(0));
+
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(sweep, { toValue: 0, duration: 0, useNativeDriver: false }),
+        Animated.timing(sweep, { toValue: 1, duration: SWEEP_MS, easing: Easing.linear, useNativeDriver: false }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [sweep]);
+
+  const words = expected.split(/\s+/);
+  const phrase = (style: TextStyle) =>
+    words.map((word, i) => (
+      <Text key={i} style={style}>
+        {word}{' '}
+      </Text>
+    ));
+
+  return (
+    <View onLayout={(e) => setWidth(e.nativeEvent.layout.width)} accessibilityLabel={`Your phrase: ${expected}`}>
+      <Text style={styles.words}>{phrase(styles.pending)}</Text>
+      {width > 0 && (
+        <Animated.View
+          pointerEvents="none"
+          style={[styles.sweep, { width: sweep.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }) }]}
+        >
+          <Text style={[styles.words, { width }]}>{phrase(styles.sweepText)}</Text>
+        </Animated.View>
       )}
     </View>
   );
@@ -210,8 +251,12 @@ const styles = StyleSheet.create({
   box: { gap: space.sm },
   words: { fontSize: font.body + 4, fontFamily: fonts.regular, textAlign: 'center' },
   heard: { color: colors.success, fontFamily: fonts.bold },
-  missed: { color: colors.muted, fontFamily: fonts.semibold, opacity: 0.55 },
+  // Words the check did not hear: red, so a wrong try is visible at once.
+  missed: { color: colors.error, fontFamily: fonts.semibold },
   pending: { color: colors.muted, fontFamily: fonts.semibold, opacity: 0.4 },
+  sweep: { position: 'absolute', top: 0, left: 0, bottom: 0, overflow: 'hidden' },
+  sweepText: { color: colors.muted, fontFamily: fonts.semibold },
+  correct: { fontSize: font.body + 8, fontFamily: fonts.bold, color: colors.success, textAlign: 'center' },
   dots: { flexDirection: 'row', justifyContent: 'center', alignItems: 'flex-end', gap: 10, height: 40, paddingBottom: 4 },
   dot: { width: 12, height: 12, borderRadius: 6, backgroundColor: colors.success },
   dotChecking: { backgroundColor: colors.borderStrong },

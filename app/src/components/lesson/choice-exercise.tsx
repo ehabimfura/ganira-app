@@ -1,11 +1,13 @@
-import { Motorbike, Volume2 } from 'lucide-react-native';
+import { Volume2 } from 'lucide-react-native';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Avatar } from '@/components/avatar';
 import { CheckFooter, type CheckState } from '@/components/lesson/check-footer';
 import { Choice, type ChoiceStatus } from '@/components/ui';
 import type { Line } from '@/content/unit1';
 import { haptics } from '@/lib/haptics';
-import { useClipPlayer, useSuccessFeedback } from '@/lib/sounds';
+import { MOTARI_ID } from '@/lib/avatars';
+import { useClipPlayer, useSuccessFeedback, useWrongFeedback } from '@/lib/sounds';
 import { colors, font, fonts, icon, palette, radiusLarge, space } from '@/theme';
 
 // A fixed order (not random), with the right answer's place varying from exercise to exercise.
@@ -43,8 +45,8 @@ export function ListenExercise({
       header={
         <View style={styles.listenRow}>
           {speaker === 'motari' && (
-            <View style={styles.motari} accessibilityLabel="Motari">
-              <Motorbike size={icon.large} color={palette.orange} strokeWidth={icon.stroke} />
+            <View accessibilityLabel="Motari">
+              <Avatar id={MOTARI_ID} size={64} />
             </View>
           )}
           <SpeakerButton onPress={() => play(line.audio)} />
@@ -92,6 +94,7 @@ function ChoiceQuiz({
   onDone: (correct: boolean) => void;
 }) {
   const success = useSuccessFeedback();
+  const wrong = useWrongFeedback();
   const [picked, setPicked] = useState<string | null>(null);
   const [state, setState] = useState<CheckState>('unanswered');
 
@@ -99,7 +102,7 @@ function ChoiceQuiz({
     const right = picked === answer;
     setState(right ? 'correct' : 'wrong');
     if (right) success();
-    else haptics.wrong();
+    else wrong();
   };
 
   // Before checking, the pick is highlighted. After, the right option is green and a wrong pick red.
@@ -163,16 +166,6 @@ const styles = StyleSheet.create({
   prompt: { fontSize: font.body + 4, fontFamily: fonts.heading, color: colors.text },
   card: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: space.md, minHeight: 140 },
   listenRow: { flexDirection: 'row', alignItems: 'center', gap: space.md },
-  motari: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.surface,
-    borderWidth: 2,
-    borderColor: colors.border,
-  },
   english: { fontSize: font.title, fontFamily: fonts.heading, color: colors.text, textAlign: 'center' },
   reveal: { fontSize: font.body + 2, fontFamily: fonts.headingBold, color: colors.muted },
   options: { gap: space.sm },

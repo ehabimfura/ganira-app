@@ -43,6 +43,8 @@ export function LessonRunner({
   const [queue, setQueue] = useState<Item[]>(() => exercises.map((exercise) => ({ exercise, retry: false })));
   const [index, setIndex] = useState(0);
   const [results, setResults] = useState<PracticeResult[]>([]);
+  // How far through the current exercise (0 to 1): a conversation fills it turn by turn.
+  const [within, setWithin] = useState(0);
   const item = queue[index];
 
   const done = (correct = true) => {
@@ -54,12 +56,13 @@ export function LessonRunner({
       return;
     }
     setQueue(next);
+    setWithin(0);
     setIndex(index + 1);
   };
 
   return (
     <View style={styles.flex}>
-      <LessonHeader progress={index / queue.length} onQuit={onQuit} />
+      <LessonHeader progress={(index + within) / queue.length} onQuit={onQuit} />
       {item.retry && (
         <View style={styles.retry}>
           <RotateCcw size={16} color={palette.orange} strokeWidth={icon.stroke} />
@@ -67,12 +70,20 @@ export function LessonRunner({
         </View>
       )}
       {/* The key gives every exercise a fresh start, also when one comes back. */}
-      <ExerciseView key={index} exercise={item.exercise} onDone={done} />
+      <ExerciseView key={index} exercise={item.exercise} onDone={done} onProgress={setWithin} />
     </View>
   );
 }
 
-function ExerciseView({ exercise, onDone }: { exercise: Exercise; onDone: (correct?: boolean) => void }) {
+function ExerciseView({
+  exercise,
+  onDone,
+  onProgress,
+}: {
+  exercise: Exercise;
+  onDone: (correct?: boolean) => void;
+  onProgress: (fraction: number) => void;
+}) {
   switch (exercise.kind) {
     case 'introduce':
       return <IntroduceExercise line={exercise.line} onDone={() => onDone()} />;
@@ -90,7 +101,7 @@ function ExerciseView({ exercise, onDone }: { exercise: Exercise; onDone: (corre
       return (
         <View style={styles.flex}>
           <Text style={styles.talk}>Now try it with the motari</Text>
-          <Ride turns={exercise.turns} onFinish={() => onDone()} finishLabel="Continue" />
+          <Ride turns={exercise.turns} onFinish={() => onDone()} onProgress={onProgress} finishLabel="Continue" />
         </View>
       );
   }

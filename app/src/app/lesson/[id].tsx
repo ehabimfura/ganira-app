@@ -27,6 +27,8 @@ export default function LessonScreen() {
   const [error, setError] = useState<string | null>(null);
   // Kept so "Try again" after a failed save still sends the lesson's answers.
   const [answers, setAnswers] = useState<PracticeResult[]>([]);
+  // The ride's own progress (0 to 1), so the bar moves as the conversation goes on.
+  const [rideProgress, setRideProgress] = useState(0);
 
   if (!level) {
     return (
@@ -118,9 +120,9 @@ export default function LessonScreen() {
     <Screen>
       {level.kind === 'roleplay' ? (
         <View style={styles.flex}>
-          <LessonHeader progress={0} onQuit={returnHome} />
+          <LessonHeader progress={rideProgress} onQuit={returnHome} />
           <Body>{level.intro}</Body>
-          <Ride turns={level.turns} onFinish={() => finish()} />
+          <Ride turns={level.turns} onFinish={() => finish()} onProgress={setRideProgress} />
         </View>
       ) : (
         <LessonRunner exercises={level.exercises} onFinish={finish} onQuit={returnHome} />

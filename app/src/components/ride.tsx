@@ -1,11 +1,13 @@
-import { Motorbike, Volume2 } from 'lucide-react-native';
-import { useRef, useState } from 'react';
+import { Volume2 } from 'lucide-react-native';
+import { useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View, type ScrollViewInstance } from 'react-native';
+import { Avatar } from '@/components/avatar';
 import { Speak } from '@/components/speak';
 import { Body, Button, Choice } from '@/components/ui';
 import type { GreetingOption, Line, Turn } from '@/content/unit1';
+import { MOTARI_ID } from '@/lib/avatars';
 import { useClipPlayer } from '@/lib/sounds';
-import { colors, font, fonts, palette, radiusLarge, shadow, space } from '@/theme';
+import { colors, font, fonts, radiusLarge, shadow, space } from '@/theme';
 
 // A conversation with a motari, as a chat: the full ride at the end of the unit, and
 // short exchanges inside lessons. The learner speaks their lines; each motari
@@ -14,17 +16,24 @@ export function Ride({
   intro,
   turns,
   onFinish,
+  onProgress,
   finishLabel = 'Finish',
 }: {
   intro?: string;
   turns: Turn[];
   onFinish: () => void;
+  // How far through the conversation, from 0 to 1, so the lesson's progress bar can move.
+  onProgress?: (fraction: number) => void;
   finishLabel?: string;
 }) {
   const play = useClipPlayer();
   const scroll = useRef<ScrollViewInstance>(null);
   const [position, setPosition] = useState(0);
   const [greeting, setGreeting] = useState<GreetingOption | null>(null);
+
+  useEffect(() => {
+    onProgress?.(turns.length ? Math.min(1, position / turns.length) : 1);
+  }, [position, turns.length, onProgress]);
 
   const lineOf = (turn: Turn, chosen: GreetingOption | null): Line | null => {
     if ('line' in turn) return turn.line;
@@ -93,7 +102,7 @@ function Bubble({ line, mine, onPlay }: { line: Line; mine: boolean; onPlay: (cl
     >
       {!mine && (
         <View style={styles.whoRow}>
-          <Motorbike size={16} color={palette.orange} strokeWidth={2.25} />
+          <Avatar id={MOTARI_ID} size={28} />
           <Text style={styles.who}>Motari</Text>
         </View>
       )}

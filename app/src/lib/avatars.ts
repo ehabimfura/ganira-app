@@ -2,6 +2,10 @@ import * as adventurer from '@dicebear/adventurer';
 import { createAvatar } from '@dicebear/core';
 import { palette } from '@/theme';
 import { catSvg, dogSvg } from '@/lib/pets';
+import { riderSvg } from '@/lib/rider';
+
+// The motari's picture in conversations. It is not one of the learner's choices.
+export const MOTARI_ID = 'motari';
 
 // People are drawn by DiceBear's "Adventurer" style (art by Lisa Wischofsky, CC BY 4.0, credited
 // on the Credits screen). The id stored in the database is the seed, so the same id always draws
@@ -66,7 +70,9 @@ export function avatarSvg(id: string): string {
   if (cached) return cached;
   const avatar = AVATARS.find((a) => a.id === id);
   let svg: string;
-  if (!avatar) {
+  if (id === MOTARI_ID) {
+    svg = riderSvg(palette.green.slice(1));
+  } else if (!avatar) {
     // An id from before the list changed: draw a boy's face from the seed, so it still shows something.
     svg = drawPerson(id, { kind: 'person', look: BOY, skin: BROWN, background: palette.green });
   } else if (avatar.kind === 'cat') {

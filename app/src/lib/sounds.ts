@@ -23,16 +23,21 @@ export function useClipPlayer(): (clip: AudioSource | undefined) => void {
   );
 }
 
-function useChime(): () => void {
-  const chime = useAudioPlayer(require('../../assets/audio/chime.wav'));
+// A short sound from the lesson's own clip files, played from the start each time.
+function useOneShot(clip: AudioSource): () => void {
+  const player = useAudioPlayer(clip);
   return useCallback(() => {
     try {
-      chime.seekTo(0);
-      chime.play();
+      player.seekTo(0);
+      player.play();
     } catch (error) {
       console.warn('Could not play sound', error);
     }
-  }, [chime]);
+  }, [player]);
+}
+
+function useChime(): () => void {
+  return useOneShot(require('../../assets/audio/chime.wav'));
 }
 
 // Feedback is a sound and a vibration, never praise words.
@@ -42,6 +47,15 @@ export function useSuccessFeedback(): () => void {
     haptics.correct();
     chime();
   }, [chime]);
+}
+
+// A wrong answer: a soft falling tone and the wrong-answer buzz.
+export function useWrongFeedback(): () => void {
+  const wrongTone = useOneShot(require('../../assets/audio/wrong.wav'));
+  return useCallback(() => {
+    haptics.wrong();
+    wrongTone();
+  }, [wrongTone]);
 }
 
 // A finished lesson: the chime with the long celebration vibration.
