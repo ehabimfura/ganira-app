@@ -158,7 +158,10 @@ export function Speak({ expected, onTried }: { expected: string; onTried: (allHe
   );
 }
 
-const SWEEP_MS = 800;
+// One pass of the wipe. It is 60% of the earlier speed (800 ms / 0.6).
+const SWEEP_MS = 1333;
+// The band fades in from 20% to at most 80% opacity while it moves across the phrase.
+const BAND_OPACITY = [0.2, 0.8];
 
 // While the learner speaks and the check runs, the phrase is grey: nothing is heard yet.
 // A lighter band wipes across it from left to right, again and again, until the result comes.
@@ -170,7 +173,8 @@ function PendingPhrase({ expected }: { expected: string }) {
     const loop = Animated.loop(
       Animated.sequence([
         Animated.timing(sweep, { toValue: 0, duration: 0, useNativeDriver: false }),
-        Animated.timing(sweep, { toValue: 1, duration: SWEEP_MS, easing: Easing.linear, useNativeDriver: false }),
+        // Fast at the start, slowing toward the end of the phrase.
+        Animated.timing(sweep, { toValue: 1, duration: SWEEP_MS, easing: Easing.out(Easing.cubic), useNativeDriver: false }),
       ]),
     );
     loop.start();
@@ -191,7 +195,13 @@ function PendingPhrase({ expected }: { expected: string }) {
       {width > 0 && (
         <Animated.View
           pointerEvents="none"
-          style={[styles.sweep, { width: sweep.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }) }]}
+          style={[
+            styles.sweep,
+            {
+              width: sweep.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }),
+              opacity: sweep.interpolate({ inputRange: [0, 1], outputRange: BAND_OPACITY }),
+            },
+          ]}
         >
           <Text style={[styles.words, { width }]}>{phrase(styles.sweepText)}</Text>
         </Animated.View>
