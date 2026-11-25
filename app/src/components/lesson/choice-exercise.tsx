@@ -174,7 +174,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: palette.blue,
     borderBottomWidth: 5,
-    borderBottomColor: '#24406A',
+    borderBottomColor: colors.secondaryEdge,
   },
   speakerLarge: { width: 96, height: 96, borderRadius: radiusLarge + 6 },
   speakerSmall: { width: 48, height: 48, borderRadius: radiusLarge - 4, borderBottomWidth: 3 },

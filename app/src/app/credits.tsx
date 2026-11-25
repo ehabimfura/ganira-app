@@ -23,8 +23,14 @@ const CREDITS = [
     url: 'https://huggingface.co/OpenVoiceOS/w2v-bert-2.0-kinyarwanda-onnx',
   },
   {
+    what: 'Video lesson',
+    who: 'Daisy speaking Kinyarwanda, by Wikitongues',
+    licence: 'CC BY 3.0',
+    url: 'https://commons.wikimedia.org/wiki/File:WIKITONGUES-_Daisy_speaking_Kinyarwanda.webm',
+  },
+  {
     what: 'Design',
-    who: 'Astryx design system by Meta, Matcha theme',
+    who: 'Layout rules from the Astryx design system by Meta (MIT)',
     licence: 'MIT',
     url: 'https://github.com/meta/astryx',
   },

@@ -117,8 +117,8 @@ const styles = StyleSheet.create({
     borderRadius: 60,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: palette.orange,
+    backgroundColor: palette.yellow,
     marginBottom: space.sm,
   },
-  complete: { fontSize: font.body, color: palette.orange, fontFamily: fonts.heading, textTransform: 'uppercase', letterSpacing: 1 },
+  complete: { fontSize: font.body, color: palette.yellow, fontFamily: fonts.heading, textTransform: 'uppercase', letterSpacing: 1 },
 });

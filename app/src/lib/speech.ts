@@ -31,3 +31,14 @@ export async function checkSpeech(uri: string, expected: string, token: string |
     timeoutMs: SPEECH_TIMEOUT_MS,
   });
 }
+
+// Some words cannot be checked by the speech model (a name such as "Daisy" is not Kinyarwanda).
+// For those, the content lists the words to count as heard, so a learner is not marked wrong for them.
+const plainWord = (word: string) => word.toLowerCase().replace(/[^\p{L}]/gu, '');
+
+export function assumeWordsHeard(result: SpeechResult, assumed: string[] | undefined): SpeechResult {
+  if (!assumed?.length) return result;
+  const names = new Set(assumed.map(plainWord));
+  const words = result.words.map((w) => (names.has(plainWord(w.word)) ? { ...w, heard: true } : w));
+  return { ...result, words, allHeard: words.every((w) => w.heard) };
+}

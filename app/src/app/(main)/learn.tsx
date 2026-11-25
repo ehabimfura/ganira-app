@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Animated, Easing, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Avatar } from '@/components/avatar';
-import { LEVEL_ICONS, LEVEL_LABELS } from '@/components/lesson/level-kinds';
+import { LEVEL_LABELS, levelIconElement } from '@/components/lesson/level-kinds';
 import { isUnlocked, LEVELS, UNIT_GOAL, UNIT_NUMBER, UNIT_TITLE, type Level } from '@/content/unit1';
 import { haptics } from '@/lib/haptics';
 import { fetchReview } from '@/lib/practice';
@@ -66,7 +66,7 @@ export default function Learn() {
 
 // The flame lights up once the learner has practised today, as Duolingo's does.
 function StreakBadge({ days, today }: { days: number; today: boolean }) {
-  const color = today ? palette.orange : colors.borderStrong;
+  const color = today ? palette.yellow : colors.borderStrong;
   return (
     <View
       style={styles.streak}
@@ -108,9 +108,8 @@ type LevelState = 'done' | 'current' | 'open' | 'locked';
 
 function LevelButton({ level, index, state }: { level: Level; index: number; state: LevelState }) {
   const locked = state === 'locked';
-  const Icon = state === 'done' ? Check : LEVEL_ICONS[level.kind];
   const face = locked ? colors.border : state === 'done' ? palette.yellow : palette.green;
-  const lip = locked ? colors.borderStrong : state === 'done' ? '#B08C00' : '#3A7300';
+  const lip = locked ? colors.borderStrong : state === 'done' ? '#D39A12' : colors.successEdge;
 
   return (
     <View style={[styles.levelRow, { transform: [{ translateX: SWING[index % SWING.length] * STEP }] }]}>
@@ -131,7 +130,11 @@ function LevelButton({ level, index, state }: { level: Level; index: number; sta
           pressed && styles.circlePressed,
         ]}
       >
-        <Icon size={34} color={locked ? colors.borderStrong : colors.primaryText} strokeWidth={3} />
+        {state === 'done' ? (
+          <Check size={34} color={locked ? colors.borderStrong : colors.primaryText} strokeWidth={3} />
+        ) : (
+          levelIconElement(level, { size: 34, color: locked ? colors.borderStrong : colors.primaryText, strokeWidth: 3 })
+        )}
         {locked && (
           <View style={styles.lock}>
             <Lock size={12} color={colors.primaryText} strokeWidth={3} />
@@ -200,7 +203,7 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: palette.orange,
+    backgroundColor: palette.yellow,
   },
   reviewTitle: { fontSize: font.body + 2, fontFamily: fonts.heading, color: colors.text },
   reviewBody: { fontSize: font.label + 1, fontFamily: fonts.regular, color: colors.muted },
@@ -212,10 +215,10 @@ const styles = StyleSheet.create({
     borderRadius: radiusLarge,
     backgroundColor: palette.green,
     borderBottomWidth: 5,
-    borderBottomColor: '#3A7300',
+    borderBottomColor: colors.successEdge,
     marginBottom: space.md,
   },
-  bannerUnit: { fontSize: font.label, fontFamily: fonts.bold, color: '#FFFFFFCC', textTransform: 'uppercase', letterSpacing: 1 },
+  bannerUnit: { fontSize: font.label, fontFamily: fonts.bold, color: '#0B1A2BB3', textTransform: 'uppercase', letterSpacing: 1 },
   bannerTitle: { fontSize: font.title - 4, fontFamily: fonts.heading, color: colors.primaryText },
   bannerGoal: { fontSize: font.label + 1, fontFamily: fonts.regular, color: colors.primaryText },
   levelRow: { alignItems: 'center', gap: space.xs },
@@ -251,7 +254,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     marginBottom: 2,
   },
-  bubbleText: { fontSize: font.label, fontFamily: fonts.heading, color: palette.green, textTransform: 'uppercase', letterSpacing: 1 },
+  bubbleText: { fontSize: font.label, fontFamily: fonts.heading, color: colors.inkGreen, textTransform: 'uppercase', letterSpacing: 1 },
   bubbleTail: {
     position: 'absolute',
     bottom: -7,

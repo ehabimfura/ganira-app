@@ -68,6 +68,9 @@ function ProfilePicker() {
       {me.profiles.length < 6 && (
         <Button label="Add child" icon={UserPlus} variant="secondary" onPress={() => router.push('/add-child')} />
       )}
+      {me.profiles.some((p) => p.kind === 'CHILD') && (
+        <Button label="Parent view" variant="secondary" onPress={() => router.push('/parent-view')} />
+      )}
       <Button label="Sign out" icon={LogOut} variant="secondary" onPress={signOut} />
     </Screen>
   );

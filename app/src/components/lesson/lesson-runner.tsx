@@ -7,6 +7,7 @@ import { LessonHeader } from '@/components/lesson/lesson-header';
 import { PairsExercise } from '@/components/lesson/pairs-exercise';
 import { IntroduceExercise, RecallExercise } from '@/components/lesson/speak-exercise';
 import { Ride } from '@/components/ride';
+import { WatchExercise } from '@/components/lesson/watch-exercise';
 import type { Exercise } from '@/content/unit1';
 import type { PracticeResult } from '@/lib/practice';
 import { colors, font, fonts, icon, palette, space } from '@/theme';
@@ -21,6 +22,8 @@ function resultsOf(exercise: Exercise, correct: boolean): PracticeResult[] {
       return [{ phrase: exercise.line.text, correct: true }];
     case 'pairs':
       return exercise.lines.map((line) => ({ phrase: line.text, correct }));
+    case 'watch':
+      return exercise.pauses.map((pause) => ({ phrase: pause.line.text, correct: true }));
     case 'talk':
       return [];
     default:
@@ -65,7 +68,7 @@ export function LessonRunner({
       <LessonHeader progress={(index + within) / queue.length} onQuit={onQuit} />
       {item.retry && (
         <View style={styles.retry}>
-          <RotateCcw size={16} color={palette.orange} strokeWidth={icon.stroke} />
+          <RotateCcw size={16} color={palette.yellow} strokeWidth={icon.stroke} />
           <Text style={styles.retryText}>Previous mistake</Text>
         </View>
       )}
@@ -97,6 +100,8 @@ function ExerciseView({
       return <BuildExercise line={exercise.line} extra={exercise.extra} onDone={onDone} />;
     case 'recall':
       return <RecallExercise line={exercise.line} onDone={onDone} />;
+    case 'watch':
+      return <WatchExercise clip={exercise.clip} cues={exercise.cues} pauses={exercise.pauses} onDone={() => onDone()} onProgress={onProgress} />;
     case 'talk':
       return (
         <View style={styles.flex}>
@@ -110,6 +115,6 @@ function ExerciseView({
 const styles = StyleSheet.create({
   flex: { flex: 1, gap: space.md },
   retry: { flexDirection: 'row', alignItems: 'center', gap: space.xs },
-  retryText: { fontSize: font.label, fontFamily: fonts.bold, color: palette.orange, textTransform: 'uppercase', letterSpacing: 0.6 },
+  retryText: { fontSize: font.label, fontFamily: fonts.bold, color: palette.yellow, textTransform: 'uppercase', letterSpacing: 0.6 },
   talk: { fontSize: font.body + 4, fontFamily: fonts.heading, color: colors.text },
 });

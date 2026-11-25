@@ -7,7 +7,7 @@ It is built for diaspora families and for foreigners living in Rwanda.
 
 | Folder | What it holds | Status |
 | --- | --- | --- |
-| `app/` | Phone app (Expo, React Native, TypeScript) | Unit 1 on phones: 8 levels, sign-in, profiles, speech check |
+| `app/` | Phone app (Expo, React Native, TypeScript) | Unit 1 on phones: 9 levels, including the Daisy video, sign-in, profiles, speech check |
 | `api/` | Node.js API (Express 5, TypeScript, mysql2) | Accounts, child profiles, lesson progress, streak, spaced review, speech check |
 | `speech/` | Python speech-recognition service (w2v-BERT 2.0, ONNX int8) | Running on Azure; per-word scoring |
 | `docs/` | Backlog, lesson design, and pointers to the SRS and UML diagrams | Current |
@@ -17,7 +17,7 @@ It is built for diaspora families and for foreigners living in Rwanda.
 ## Hosting
 
 - **Azure (South Africa North), live since 15 November 2026.** The API and speech service are two App
-  Services (`ganira-api-eh`, `ganira-speech-eh`) on one B1 plan. The database is Azure Database
+  Services (`ganira-api-eh`, `ganira-speech-eh`) on one B2 plan. The database is Azure Database
   for MySQL Flexible Server (`ganira-db`, B1ms, free for 12 months). Resource group: `ganira-rg`.
 - Secrets live only in Azure App Settings and in a local file outside the repo. Nothing secret is committed.
 - Deploy the API and speech service with `scripts/deploy-azure.sh` (builds locally, stops, uploads, starts).

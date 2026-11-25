@@ -9,13 +9,16 @@ and from how proven language apps work. The content lives in `app/src/content/un
 | Level | Kind | Teaches |
 | --- | --- | --- |
 | 1. Hello | Lesson | Muraho, Mwaramutse, Mwiriwe |
-| 2. Hi and thanks | Lesson | Bite se, Murakoze, Yego, Oya |
-| 3. Practice: greetings | Practice | Levels 1-2 again |
-| 4. Calling a moto | Lesson | Mota?, and the motari's greetings |
-| 5. Where to? | Lesson | Ndashaka kujya i Remera kuri Sitadi (built up backward) |
-| 6. How much? | Lesson | ni angahe?, magana inani, the offer |
-| 7. Practice: the ride | Practice | Levels 4-6 again |
-| 8. The ride | Roleplay | The whole conversation with the motari |
+| 2. Meet Daisy | Lesson (video) | Muraho, nitwa Daisy; murakaza neza; murakoze cyane |
+| 3. Hi and thanks | Lesson | Bite se, Murakoze, Yego, Oya |
+| 4. Practice: greetings | Practice | Levels 1-3 again |
+| 5. Calling a moto | Lesson | Mota?, and the motari's greetings |
+| 6. Where to? | Lesson | Ndashaka kujya i Remera kuri Sitadi (built up backward) |
+| 7. How much? | Lesson | ni angahe?, magana inani, the offer |
+| 8. Practice: the ride | Practice | Levels 5-7 again |
+| 9. The ride | Roleplay | The whole conversation with the motari |
+
+**Meet Daisy (video).** A native speaker, Daisy, introduces herself with English and Kinyarwanda captions, as Speak does. The video stops three times so the learner can say the phrase: "Muraho, nitwa Daisy" (after her introduction), "murakaza neza" (welcome), and "murakoze cyane" (thank you very much). Each stop uses the same speech check as the other lessons. The video is Wikitongues' clip (CC BY 3.0), credited on the Credits screen.
 
 Each kind of level has its own icon on the path: a star for a lesson, a dumbbell for
 practice, speech bubbles for a roleplay (as Duolingo marks its levels). Polite words

@@ -65,7 +65,7 @@ export function PairsExercise({ lines, onDone }: { lines: Line[]; onDone: (corre
         onPress={() => tap(p)}
         style={[styles.tile, isPicked && styles.picked, isWrong && styles.wrong, done && styles.done]}
       >
-        <Text style={[styles.tileText, isWrong && { color: colors.error }, done && { color: colors.success }]}>{label}</Text>
+        <Text style={[styles.tileText, isWrong && { color: colors.error }, done && { color: colors.successText }]}>{label}</Text>
       </Pressable>
     );
   };

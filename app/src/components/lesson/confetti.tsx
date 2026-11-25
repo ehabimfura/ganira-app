@@ -3,7 +3,7 @@ import { Animated, Easing, StyleSheet, useWindowDimensions, View } from 'react-n
 import { palette } from '@/theme';
 
 const PIECES = 36;
-const COLORS = [palette.green, palette.yellow, palette.orange, palette.pink, palette.blue, palette.purple, palette.teal];
+const COLORS = [palette.green, palette.yellow, palette.cyan, palette.blue];
 
 // Paper pieces that fall once over the screen when a lesson is finished.
 // Positions follow a fixed pattern, so the screen looks the same every time.

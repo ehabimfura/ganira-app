@@ -30,9 +30,32 @@ export type Turn =
   | { speaker: 'me'; choose: GreetingOption[] }
   | { speaker: 'motari'; greetingReply: true };
 
+// A video clip, as bundled by Metro.
+export type VideoClip = number;
+
+// One caption: shown from `start` to `end` (seconds), in Kinyarwanda with English under it.
+export interface Cue {
+  start: number;
+  end: number;
+  kinyarwanda: string;
+  english: string;
+}
+
+// The video stops at `at` (seconds) so the learner can say `line.text`, then carries on.
+export interface Pause {
+  // Where the sentence starts (seconds). Replay rewinds to here.
+  from: number;
+  at: number;
+  line: Line;
+  // Words the speech model cannot check (a name), counted as heard.
+  assumeHeard?: string[];
+}
+
 export type Exercise =
   // A new phrase: hear it, then say it.
   | { kind: 'introduce'; line: Line }
+  // A video with captions, stopped at pauses for the learner to repeat a phrase.
+  | { kind: 'watch'; clip: VideoClip; cues: Cue[]; pauses: Pause[] }
   // Hear Kinyarwanda, pick the English meaning.
   | { kind: 'listen'; line: Line; wrong: string[]; speaker?: 'motari' }
   // See the English, pick the Kinyarwanda.
@@ -49,7 +72,7 @@ export type Exercise =
 export type LevelKind = 'lesson' | 'practice' | 'roleplay';
 
 export type Level =
-  | { id: string; title: string; goal: string; kind: 'lesson' | 'practice'; exercises: Exercise[] }
+  | { id: string; title: string; goal: string; kind: 'lesson' | 'practice'; exercises: Exercise[]; icon?: 'video' }
   | { id: string; title: string; goal: string; kind: 'roleplay'; intro: string; turns: Turn[] };
 
 const audio = {
@@ -143,6 +166,20 @@ export const UNIT_NUMBER = 1;
 export const UNIT_TITLE = 'Taking a moto in Kigali';
 export const UNIT_GOAL = 'Greet a motari, say where you are going and agree on a price.';
 
+// Captions for the Daisy video (Wikitongues, CC BY 3.0). Times are from the caption files.
+// Kinyarwanda captions: Amara.org community subtitles, corrected by a native speaker (24 Nov).
+const DAISY_CUES: Cue[] = [
+  { start: 0.0, end: 2.741, kinyarwanda: 'Muraho, nitwa Daisy', english: 'Hello, my name is Daisy.' },
+  { start: 2.741, end: 6.151, kinyarwanda: 'Ndi umunyarwandakazi, nturuka mu Rwanda', english: 'I am Rwandan, I come from Rwanda;' },
+  { start: 6.151, end: 9.381, kinyarwanda: "Igihugu cya gitemba amata n'ubuki,", english: 'the land where milk and honey flow,' },
+  { start: 9.381, end: 11.461, kinyarwanda: "Igihugu cy'imisozi igihumbi,", english: 'the land of a thousand hills,' },
+  { start: 11.461, end: 14.863, kinyarwanda: "Igihugu cy'abeza n'ibyiza byinshi.", english: 'a country full of beautiful people and beautiful things.' },
+  { start: 14.863, end: 16.867, kinyarwanda: 'Dukunda abashitsi.', english: 'We love visitors.' },
+  { start: 16.867, end: 18.041, kinyarwanda: 'Ndabararitse,', english: 'I invite you to come visit' },
+  { start: 18.041, end: 21.377, kinyarwanda: 'murakaza neza murisanga, mu Rwanda rwacu.', english: 'and you are welcome to make yourself feel at home here, in our Rwanda.' },
+  { start: 21.377, end: 23.032, kinyarwanda: 'Murakoze cyane.', english: 'Thank you very much.' },
+];
+
 export const LEVELS: Level[] = [
   {
     id: 'u1-hello',
@@ -161,6 +198,25 @@ export const LEVELS: Level[] = [
       recall(me.muraho),
       recall(me.mwiriwe),
       recall(me.mwaramutse),
+    ],
+  },
+  {
+    id: 'u1-daisy',
+    title: 'Meet Daisy',
+    goal: 'Introduce yourself, and welcome and thank someone in Kinyarwanda.',
+    kind: 'lesson',
+    icon: 'video',
+    exercises: [
+      {
+        kind: 'watch',
+        clip: require('../../assets/video/daisy-intro.mp4') as VideoClip,
+        cues: DAISY_CUES,
+        pauses: [
+          { from: 0.0, at: 2.741, line: { text: 'Muraho, nitwa Daisy', meaning: 'Hello, my name is Daisy' }, assumeHeard: ['Daisy'] },
+          { from: 18.041, at: 19.79, line: { text: 'murakaza neza', meaning: 'Welcome' } },
+          { from: 21.0, at: 23.032, line: { text: 'murakoze cyane', meaning: 'Thank you very much' } },
+        ],
+      },
     ],
   },
   {

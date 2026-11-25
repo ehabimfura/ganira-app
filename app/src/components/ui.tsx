@@ -75,8 +75,8 @@ type ButtonVariant = 'primary' | 'secondary' | 'success' | 'danger';
 const BUTTON_COLORS: Record<ButtonVariant, { face: string; edge: string; text: string; border?: string }> = {
   primary: { face: colors.primary, edge: colors.primaryEdge, text: colors.primaryText },
   secondary: { face: colors.surface, edge: colors.borderStrong, text: colors.primary, border: colors.borderStrong },
-  success: { face: colors.success, edge: '#2A5400', text: colors.primaryText },
-  danger: { face: colors.error, edge: '#8F0000', text: colors.primaryText },
+  success: { face: colors.success, edge: colors.successEdge, text: colors.primaryText },
+  danger: { face: colors.error, edge: colors.errorEdge, text: colors.surface },
 };
 
 // A raised button with a darker lip underneath, like Duolingo's; it sinks when pressed.
@@ -197,7 +197,7 @@ export function Choice({
       <Text
         style={[
           styles.choiceLabel,
-          state === 'correct' && { color: colors.success },
+          state === 'correct' && { color: colors.successText },
           state === 'wrong' && { color: colors.error },
         ]}
       >

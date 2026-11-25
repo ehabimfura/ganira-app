@@ -20,7 +20,7 @@ export function IntroduceExercise({ line, onDone }: { line: Line; onDone: () => 
   return (
     <View style={styles.flex}>
       <View style={styles.tag}>
-        <Sparkles size={16} color={palette.purple} strokeWidth={icon.stroke} />
+        <Sparkles size={16} color={palette.blue} strokeWidth={icon.stroke} />
         <Text style={styles.tagText}>New phrase</Text>
       </View>
       <View style={styles.card}>
@@ -79,7 +79,7 @@ export function RecallExercise({ line, onDone }: { line: Line; onDone: (remember
 const styles = StyleSheet.create({
   flex: { flex: 1, gap: space.md },
   tag: { flexDirection: 'row', alignItems: 'center', gap: space.xs },
-  tagText: { fontSize: font.label, fontFamily: fonts.bold, color: palette.purple, textTransform: 'uppercase', letterSpacing: 0.6 },
+  tagText: { fontSize: font.label, fontFamily: fonts.bold, color: colors.inkBlue, textTransform: 'uppercase', letterSpacing: 0.6 },
   prompt: { fontSize: font.body + 4, fontFamily: fonts.heading, color: colors.text },
   card: {
     flex: 1,
@@ -93,6 +93,6 @@ const styles = StyleSheet.create({
   },
   phrase: { fontSize: font.title, fontFamily: fonts.heading, color: colors.text, textAlign: 'center' },
   meaning: { fontSize: font.body, fontFamily: fonts.regular, color: colors.muted, textAlign: 'center' },
-  answer: { fontSize: font.body + 2, fontFamily: fonts.headingBold, color: colors.success, textAlign: 'center' },
+  answer: { fontSize: font.body + 2, fontFamily: fonts.headingBold, color: colors.successText, textAlign: 'center' },
   hint: { fontSize: font.body, fontFamily: fonts.semibold, color: colors.muted, textAlign: 'center' },
 });

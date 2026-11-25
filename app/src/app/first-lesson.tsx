@@ -47,7 +47,7 @@ export default function FirstLesson() {
       {heard && (
         <>
           <Body>Now say it out loud!</Body>
-          <Speak expected="Muraho" onTried={() => setSpoke(true)} />
+          <Speak expected="Muraho" skippable={false} onTried={() => setSpoke(true)} />
           {spoke && <Button label="Continue" onPress={next} />}
         </>
       )}

@@ -38,11 +38,11 @@ type Pet = { kind: 'cat' | 'dog'; background: string };
 export const AVATARS = [
   { id: 'lion', kind: 'person', look: BOY, skin: DARK, background: palette.yellow },
   { id: 'gorilla', kind: 'person', look: BOY, skin: BROWN, background: palette.green },
-  { id: 'giraffe', kind: 'person', look: GIRL, skin: BROWN, background: palette.orange },
-  { id: 'zebra', kind: 'person', look: GIRL, skin: DARK, background: palette.teal },
+  { id: 'giraffe', kind: 'person', look: GIRL, skin: BROWN, background: palette.cyan },
+  { id: 'zebra', kind: 'person', look: GIRL, skin: DARK, background: palette.blue },
   { id: 'elephant', kind: 'person', look: MAN, skin: BROWN, background: palette.blue },
-  { id: 'hippo', kind: 'person', look: MAN, skin: DARK, background: palette.purple },
-  { id: 'leopard', kind: 'cat', background: palette.pink },
+  { id: 'hippo', kind: 'person', look: MAN, skin: DARK, background: palette.green },
+  { id: 'leopard', kind: 'cat', background: palette.cyan },
   { id: 'cow', kind: 'dog', background: palette.cyan },
 ] as const satisfies readonly ({ id: string } & (Person | Pet))[];
 
