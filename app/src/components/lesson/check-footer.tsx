@@ -30,6 +30,7 @@ export function CheckFooter({
   }
   const right = state === 'correct';
   const tint = right ? colors.success : colors.error;
+  const textTint = right ? colors.successText : colors.error;
   const Icon = right ? Check : X;
   return (
     <View
@@ -41,9 +42,9 @@ export function CheckFooter({
           <Icon size={20} color={colors.primaryText} strokeWidth={3} />
         </View>
         <View style={styles.flex}>
-          {!right && <Text style={[styles.heading, { color: tint }]}>Correct answer:</Text>}
-          <Text style={[styles.answer, { color: tint }]}>{answer.text}</Text>
-          <Text style={[styles.meaning, { color: tint }]}>{answer.meaning}</Text>
+          {!right && <Text style={[styles.heading, { color: textTint }]}>Correct answer:</Text>}
+          <Text style={[styles.answer, { color: textTint }]}>{answer.text}</Text>
+          <Text style={[styles.meaning, { color: textTint }]}>{answer.meaning}</Text>
         </View>
       </View>
       <Button label="Continue" variant={right ? 'success' : 'danger'} onPress={onContinue} />

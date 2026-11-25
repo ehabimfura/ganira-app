@@ -164,7 +164,7 @@ export function authRoutes(db: Database, now: () => Date = () => new Date()) {
       [session.accountId],
     );
     const [learners] = await db.pool.query<RowDataPacket[]>(
-      `SELECT id, kind, nickname, avatar, path, level, daily_goal_minutes, pin_hash IS NOT NULL AS has_pin
+      `SELECT id, kind, nickname, avatar, path, level, daily_goal_minutes, reminder_time, pin_hash IS NOT NULL AS has_pin
          FROM learners WHERE account_id = ? ORDER BY id`,
       [session.accountId],
     );
@@ -191,6 +191,7 @@ export function authRoutes(db: Database, now: () => Date = () => new Date()) {
         path: l.path,
         level: l.level,
         dailyGoalMinutes: l.daily_goal_minutes,
+        reminderTime: l.reminder_time ? String(l.reminder_time).slice(0, 5) : null,
         hasPin: Boolean(l.has_pin),
         completedLessons: completedBy(l.id),
         streak: streakOf(l.id),

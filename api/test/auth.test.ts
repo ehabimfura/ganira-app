@@ -59,6 +59,7 @@ describe("sign-up", () => {
         path: "ADULT",
         level: "NEW",
         dailyGoalMinutes: 10,
+        reminderTime: null,
         hasPin: false,
         completedLessons: [],
         streak: { days: 0, practisedToday: false },

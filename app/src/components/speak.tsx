@@ -12,8 +12,8 @@ import { Button, ErrorText } from '@/components/ui';
 import { messageFor } from '@/lib/api';
 import { haptics } from '@/lib/haptics';
 import { useSession } from '@/lib/session';
-import { useSuccessFeedback } from '@/lib/sounds';
-import { checkSpeech, type SpeechResult } from '@/lib/speech';
+import { useSuccessFeedback, useWrongFeedback } from '@/lib/sounds';
+import { assumeWordsHeard, checkSpeech, type SpeechResult } from '@/lib/speech';
 import { colors, font, fonts, space } from '@/theme';
 
 const MAX_RECORDING_MS = 10000;
@@ -37,11 +37,24 @@ type Stage = 'idle' | 'recording' | 'checking' | 'done';
 // The learner says the phrase; the words the speech check heard turn green.
 // Every word green plays the chime and success vibration. There is no pass mark:
 // after any try the learner may move on (onTried), or try again.
-export function Speak({ expected, onTried }: { expected: string; onTried: (allHeard: boolean) => void }) {
+export function Speak({
+  expected,
+  onTried,
+  assumeHeard,
+  skippable = true,
+}: {
+  expected: string;
+  onTried: (allHeard: boolean) => void;
+  // Words the speech model cannot check, counted as heard (see assumeWordsHeard).
+  assumeHeard?: string[];
+  // Shows "Can't speak now" before the first try (FR 4.6). Off in the first lesson.
+  skippable?: boolean;
+}) {
   const { token } = useSession();
   const recorder = useAudioRecorder(SPEECH_RECORDING);
   const recorderState = useAudioRecorderState(recorder, 100);
   const success = useSuccessFeedback();
+  const wrong = useWrongFeedback();
   const [stage, setStage] = useState<Stage>('idle');
   const [result, setResult] = useState<SpeechResult | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -106,7 +119,7 @@ export function Speak({ expected, onTried }: { expected: string; onTried: (allHe
     try {
       await recorder.stop();
       if (!recorder.uri) throw new Error('No recording was saved');
-      const answer = await checkSpeech(recorder.uri, expected, token);
+      const answer = assumeWordsHeard(await checkSpeech(recorder.uri, expected, token), assumeHeard);
       setResult(answer);
       if (answer.allHeard) success();
       else haptics.tap();
@@ -152,6 +165,16 @@ export function Speak({ expected, onTried }: { expected: string; onTried: (allHe
           variant={stage === 'idle' ? 'primary' : 'secondary'}
           busy={stage === 'checking'}
           onPress={start}
+        />
+      )}
+      {skippable && stage === 'idle' && (
+        <Button
+          label="Can't speak now"
+          variant="secondary"
+          onPress={() => {
+            wrong();
+            finishTry(null);
+          }}
         />
       )}
     </View>
@@ -260,13 +283,13 @@ function ListeningDots({ level, checking = false }: { level?: number; checking?:
 const styles = StyleSheet.create({
   box: { gap: space.sm },
   words: { fontSize: font.body + 4, fontFamily: fonts.regular, textAlign: 'center' },
-  heard: { color: colors.success, fontFamily: fonts.bold },
+  heard: { color: colors.successText, fontFamily: fonts.bold },
   // Words the check did not hear: red, so a wrong try is visible at once.
   missed: { color: colors.error, fontFamily: fonts.semibold },
   pending: { color: colors.muted, fontFamily: fonts.semibold, opacity: 0.4 },
   sweep: { position: 'absolute', top: 0, left: 0, bottom: 0, overflow: 'hidden' },
   sweepText: { color: colors.muted, fontFamily: fonts.semibold },
-  correct: { fontSize: font.body + 8, fontFamily: fonts.bold, color: colors.success, textAlign: 'center' },
+  correct: { fontSize: font.body + 8, fontFamily: fonts.bold, color: colors.successText, textAlign: 'center' },
   dots: { flexDirection: 'row', justifyContent: 'center', alignItems: 'flex-end', gap: 10, height: 40, paddingBottom: 4 },
   dot: { width: 12, height: 12, borderRadius: 6, backgroundColor: colors.success },
   dotChecking: { backgroundColor: colors.borderStrong },

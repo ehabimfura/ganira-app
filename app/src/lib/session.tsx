@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { ApiError, apiRequest } from './api';
+import { readJson, writeJson } from './offline-store';
 import { clearToken, readToken, saveToken } from './token-store';
 
 export interface Profile {
@@ -10,6 +11,8 @@ export interface Profile {
   path: 'FAMILY' | 'ADULT' | null;
   level: 'NEW' | 'FEW_WORDS' | 'SHORT_CHAT' | null;
   dailyGoalMinutes: number;
+  // "HH:MM" in Kigali time, or null for no reminder.
+  reminderTime: string | null;
   hasPin: boolean;
   // Level ids finished by this profile, in path order.
   completedLessons: string[];
@@ -33,7 +36,12 @@ interface SessionValue {
   signUp(body: Record<string, unknown>): Promise<void>;
   signOut(): Promise<void>;
   refresh(): Promise<void>;
+  // Marks a lesson done on this phone straight away, for a lesson finished without internet.
+  completeLessonLocally(lessonId: string): void;
 }
+
+// The profile data from the last time the phone was online, so the app opens without internet.
+const ME_FILE = 'me.json';
 
 const SessionContext = createContext<SessionValue | null>(null);
 
@@ -44,22 +52,32 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const signOutLocally = useCallback(async () => {
     await clearToken();
+    writeJson(ME_FILE, null);
     setToken(null);
     setMe(null);
     setStatus('signedOut');
   }, []);
 
   // Loads /me for a token. A token the server no longer accepts is thrown away.
+  // With no internet, the profile data from the last online visit is used instead.
   const loadMe = useCallback(
     async (newToken: string) => {
       try {
         const data = await apiRequest<Me>('/me', { token: newToken });
+        writeJson(ME_FILE, data);
         setToken(newToken);
         setMe(data);
         setStatus('signedIn');
       } catch (error) {
         if (error instanceof ApiError && error.status === 401) {
           await signOutLocally();
+          return;
+        }
+        const cached = readJson<Me | null>(ME_FILE, null);
+        if (error instanceof ApiError && error.code === 'NETWORK' && cached) {
+          setToken(newToken);
+          setMe(cached);
+          setStatus('signedIn');
           return;
         }
         throw error;
@@ -74,6 +92,20 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       .then((saved) => (saved ? loadMe(saved) : signOutLocally()))
       .catch(signOutLocally);
   }, [loadMe, signOutLocally]);
+
+  const completeLessonLocally = useCallback((lessonId: string) => {
+    setMe((current) => {
+      if (!current) return current;
+      const profiles = current.profiles.map((profile) =>
+        profile.id === current.activeProfileId && !profile.completedLessons.includes(lessonId)
+          ? { ...profile, completedLessons: [...profile.completedLessons, lessonId] }
+          : profile,
+      );
+      const next = { ...current, profiles };
+      writeJson(ME_FILE, next);
+      return next;
+    });
+  }, []);
 
   const value = useMemo<SessionValue>(
     () => ({
@@ -101,8 +133,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       async refresh() {
         if (token) await loadMe(token);
       },
+      completeLessonLocally,
     }),
-    [status, me, token, loadMe, signOutLocally],
+    [status, me, token, loadMe, signOutLocally, completeLessonLocally],
   );
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;

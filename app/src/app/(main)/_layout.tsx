@@ -1,5 +1,8 @@
 import { Redirect, Tabs } from 'expo-router';
+import { useEffect } from 'react';
 import { CircleUserRound, House } from 'lucide-react-native';
+import { sendPending } from '@/lib/offline-queue';
+import { syncReminder } from '@/lib/reminders';
 import { useSession } from '@/lib/session';
 import { colors, fonts, icon } from '@/theme';
 
@@ -7,7 +10,15 @@ import { colors, fonts, icon } from '@/theme';
 // Learn (the path) and Profile (who is learning, switching profile, signing out).
 // Without an open profile there is nothing to show, so Home's profile picker takes over.
 export default function MainTabs() {
-  const { me } = useSession();
+  const { me, token } = useSession();
+  const activeReminder = me?.profiles.find((p) => p.id === me.activeProfileId)?.reminderTime ?? null;
+  useEffect(() => {
+    syncReminder(activeReminder);
+  }, [activeReminder]);
+  // Lessons finished without internet are sent once the phone is back online.
+  useEffect(() => {
+    if (token) sendPending(token).catch(() => {});
+  }, [token]);
   if (!me || me.activeProfileId === null) return <Redirect href="/home" />;
 
   return (

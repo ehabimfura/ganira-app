@@ -57,6 +57,7 @@ describe("child profiles", () => {
         path: "FAMILY",
         level: "NEW",
         dailyGoalMinutes: 5,
+        reminderTime: null,
         hasPin: false,
         completedLessons: [],
         streak: { days: 0, practisedToday: false },

@@ -285,12 +285,12 @@ await check('a PIN-locked child needs the right PIN', async () => {
   await page.screenshot({ path: `${SHOTS}10-child-home.png` });
 });
 
-await check('a child has no sign-out; finishing level 1 opens level 2 only', async () => {
+await check('a child has no sign-out; finishing level 1 opens level 2 only (the Daisy video)', async () => {
   await page.getByText('Profile', { exact: true }).filter({ visible: true }).last().click();
   await text('Switch profile');
   if (await shown('Sign out')) throw new Error('Sign out shown in child mode');
   await page.getByText('Learn', { exact: true }).filter({ visible: true }).last().click();
-  if (!(await isLocked('Lesson 2: Hi and thanks'))) throw new Error('level 2 open before level 1 was done');
+  if (!(await isLocked('Lesson 2: Meet Daisy'))) throw new Error('level 2 open before level 1 was done');
   await tap('Lesson 1: Hello');
   await text('By the end you can:');
   await text('Greet anyone at any time of day.');
@@ -331,18 +331,19 @@ await check('a child has no sign-out; finishing level 1 opens level 2 only', asy
   await backToPath('Ineza');
   // Finishing a level starts the streak; the flame lights up for today.
   await page.getByLabel('Streak: 1 day, practised today').filter({ visible: true }).first().waitFor();
-  if (await isLocked('Lesson 2: Hi and thanks')) throw new Error('level 2 still locked');
-  if (!(await isLocked('Practice 3: Practice: greetings'))) throw new Error('level 3 open too early');
+  if (await isLocked('Lesson 2: Meet Daisy')) throw new Error('level 2 still locked');
+  if (!(await isLocked('Lesson 3: Hi and thanks'))) throw new Error('level 3 open too early');
 });
 
-await check('levels 2-7 teach the ride, then the roleplay ends with "vayo tugende"', async () => {
+await check('levels 2-8 teach the ride, then the roleplay ends with "vayo tugende"', async () => {
   const levels = [
-    'Lesson 2: Hi and thanks',
-    'Practice 3: Practice: greetings',
-    'Lesson 4: Calling a moto',
-    'Lesson 5: Where to?',
-    'Lesson 6: How much?',
-    'Practice 7: Practice: the ride',
+    'Lesson 2: Meet Daisy',
+    'Lesson 3: Hi and thanks',
+    'Practice 4: Practice: greetings',
+    'Lesson 5: Calling a moto',
+    'Lesson 6: Where to?',
+    'Lesson 7: How much?',
+    'Practice 8: Practice: the ride',
   ];
   for (const name of levels) {
     await tap(name);
@@ -353,7 +354,7 @@ await check('levels 2-7 teach the ride, then the roleplay ends with "vayo tugend
     await finishLevel();
     await backToPath('Ineza');
   }
-  await tap('Roleplay 8: The ride');
+  await tap('Roleplay 9: The ride');
   await tap('Start');
   await text('Greet the motari');
   await page.getByRole('radio', { name: 'Mwaramutse' }).click();

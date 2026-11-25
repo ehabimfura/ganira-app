@@ -1,10 +1,11 @@
 import { router } from 'expo-router';
-import { BookOpenCheck, Info, LogOut, Target, UsersRound } from 'lucide-react-native';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { BookOpenCheck, Info, LogOut, Mic, Target, TrendingUp, UsersRound } from 'lucide-react-native';
+import { ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Avatar } from '@/components/avatar';
 import { Button } from '@/components/ui';
 import { LEVELS } from '@/content/unit1';
+import { updateSettings, useSettings } from '@/lib/settings';
 import { useSession } from '@/lib/session';
 import { colors, font, fonts, icon, palette, radiusLarge, shadow, space } from '@/theme';
 
@@ -12,6 +13,7 @@ import { colors, font, fonts, icon, palette, radiusLarge, shadow, space } from '
 // password, so a child can't wander off) or signing out (adults only).
 export default function Profile() {
   const { me, signOut } = useSession();
+  const settings = useSettings();
   const profile = me?.profiles.find((p) => p.id === me.activeProfileId);
   if (!me || !profile) return null;
   const isChild = me.account.kind === 'PARENT';
@@ -28,10 +30,17 @@ export default function Profile() {
 
         <View style={styles.stats}>
           <Stat icon={<BookOpenCheck size={icon.size} color={palette.green} strokeWidth={icon.stroke} />} value={`${finished} / ${LEVELS.length}`} label="Levels done" />
-          <Stat icon={<Target size={icon.size} color={palette.orange} strokeWidth={icon.stroke} />} value={`${profile.dailyGoalMinutes} min`} label="Daily goal" />
+          <Stat icon={<Target size={icon.size} color={palette.yellow} strokeWidth={icon.stroke} />} value={`${profile.dailyGoalMinutes} min`} label="Daily goal" />
+        </View>
+
+        <View style={styles.settings}>
+          <ToggleRow label="Sound" value={settings.sound} onChange={(sound) => updateSettings({ sound })} />
+          <ToggleRow label="Vibration" value={settings.vibration} onChange={(vibration) => updateSettings({ vibration })} />
         </View>
 
         <View style={styles.actions}>
+          <Button label="My progress" icon={TrendingUp} variant="secondary" onPress={() => router.push('/progress')} />
+          <Button label="Speech help" icon={Mic} variant="secondary" onPress={() => router.push('/speech-help')} />
           {isChild ? (
             <Button label="Switch profile" icon={UsersRound} variant="secondary" onPress={() => router.push('/parent-unlock')} />
           ) : (
@@ -50,6 +59,21 @@ function Stat({ icon: iconNode, value, label }: { icon: React.ReactNode; value: 
       {iconNode}
       <Text style={styles.statValue}>{value}</Text>
       <Text style={styles.statLabel}>{label}</Text>
+    </View>
+  );
+}
+
+function ToggleRow({ label, value, onChange }: { label: string; value: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <View style={styles.toggleRow}>
+      <Text style={styles.toggleLabel}>{label}</Text>
+      <Switch
+        accessibilityLabel={label}
+        value={value}
+        onValueChange={onChange}
+        trackColor={{ false: colors.border, true: colors.primary }}
+        thumbColor={colors.surface}
+      />
     </View>
   );
 }
@@ -73,5 +97,8 @@ const styles = StyleSheet.create({
   },
   statValue: { fontSize: font.body + 4, fontFamily: fonts.heading, color: colors.text },
   statLabel: { fontSize: font.label, fontFamily: fonts.regular, color: colors.muted },
+  settings: { gap: space.xs, borderRadius: radiusLarge, backgroundColor: colors.surface, borderWidth: 2, borderColor: colors.border, paddingHorizontal: space.md },
+  toggleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 52 },
+  toggleLabel: { fontSize: font.body, fontFamily: fonts.semibold, color: colors.text },
   actions: { gap: space.sm },
 });

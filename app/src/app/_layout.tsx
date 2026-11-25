@@ -11,6 +11,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { OnboardingDraftProvider } from '@/lib/onboarding-draft';
+import { loadSettings } from '@/lib/settings';
 import { SessionProvider, useSession } from '@/lib/session';
 import { colors } from '@/theme';
 
@@ -69,6 +70,10 @@ function RootStack() {
         <Stack.Screen name="parent-unlock" />
         <Stack.Screen name="lesson/[id]" options={{ headerShown: false, gestureEnabled: false }} />
         <Stack.Screen name="review" options={{ headerShown: false, gestureEnabled: false }} />
+        <Stack.Screen name="progress" />
+        <Stack.Screen name="speech-help" />
+        <Stack.Screen name="parent-view" />
+        <Stack.Screen name="child/[id]" />
       </Stack.Protected>
     </Stack>
   );
@@ -79,6 +84,7 @@ export default function RootLayout() {
     // Lessons should be heard even when the iPhone's silent switch is on,
     // and the microphone must be usable for the speech check.
     setAudioModeAsync({ playsInSilentMode: true, allowsRecording: true }).catch(() => {});
+    loadSettings();
   }, []);
 
   return (

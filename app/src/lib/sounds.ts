@@ -1,6 +1,7 @@
 import { useAudioPlayer, type AudioSource } from 'expo-audio';
 import { useCallback } from 'react';
 import { haptics } from '@/lib/haptics';
+import { getSettings } from '@/lib/settings';
 
 // A missing speaker or a browser that blocks sound must never stop a lesson,
 // so failures are logged and the lesson carries on.
@@ -11,7 +12,7 @@ export function useClipPlayer(): (clip: AudioSource | undefined) => void {
   const player = useAudioPlayer(null);
   return useCallback(
     (clip: AudioSource | undefined) => {
-      if (!clip) return;
+      if (!clip || !getSettings().sound) return;
       try {
         player.replace(clip);
         player.play();
@@ -27,6 +28,7 @@ export function useClipPlayer(): (clip: AudioSource | undefined) => void {
 function useOneShot(clip: AudioSource): () => void {
   const player = useAudioPlayer(clip);
   return useCallback(() => {
+    if (!getSettings().sound) return;
     try {
       player.seekTo(0);
       player.play();

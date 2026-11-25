@@ -16,8 +16,21 @@ const REVIEW_SIZE = 8;
 const HOUR_MS = 60 * 60 * 1000;
 
 // Counts today for the streak and updates how well each phrase is remembered.
-export async function recordPractice(db: Database, learnerId: number, results: PracticeResult[], now: Date) {
+export async function recordPractice(
+  db: Database,
+  learnerId: number,
+  results: PracticeResult[],
+  now: Date,
+  seconds = 0,
+) {
   await db.pool.query("INSERT IGNORE INTO learning_days (learner_id, day) VALUES (?, ?)", [learnerId, kigaliDay(now)]);
+  if (seconds > 0) {
+    await db.pool.query("UPDATE learning_days SET seconds = seconds + ? WHERE learner_id = ? AND day = ?", [
+      seconds,
+      learnerId,
+      kigaliDay(now),
+    ]);
+  }
   if (results.length === 0) return;
 
   const phrases = [...new Set(results.map((r) => r.phrase))];

@@ -1,36 +1,43 @@
-// One place for the app's look: Meta's Astryx design system, Matcha theme
-// (https://github.com/meta/astryx, MIT). Astryx's components are web-only, so its
-// light-mode design tokens are carried over here by hand from @astryxdesign/theme-matcha.
+// One place for the app's look. Ganira's own palette: cyan and blue as the main colours,
+// with yellow and mint as accents. Layout rules (spacing, radii, fonts) follow Meta's
+// Astryx design system (https://github.com/meta/astryx, MIT), carried over by hand because
+// Astryx's components are web-only.
+
+// Bright colours do not pass contrast on white, so text on them is always the dark ink,
+// and text in an accent colour uses the darker "ink" version of that colour.
+const INK = '#0B1A2B';
 
 export const colors = {
-  background: '#F0F0E0', // --color-background-body
-  surface: '#FFFFFF', // --color-background-card
-  selected: '#3E481D14', // --color-accent-muted
-  text: '#3E481D', // --color-text-primary
-  muted: '#5A6B2A', // --color-text-secondary
-  primary: '#3E481D', // --color-accent
-  primaryEdge: '#262C10', // the darker lip under a primary button
-  primaryText: '#FFFFFF', // --color-on-accent
-  border: '#DCE3CE', // --color-border
-  borderStrong: '#B7C29E', // --color-border-emphasized
-  success: '#3D7A00', // --color-text-success: right answers, words the speech check heard
-  successSoft: '#3D7A001F',
-  error: '#CC0000', // --color-text-error: wrong answers
-  errorSoft: '#CC00001A',
+  background: '#F5F5F7', // Apple's light background
+  surface: '#FFFFFF',
+  selected: '#48DBFB2E', // cyan, faint, for a picked option
+  text: INK,
+  muted: '#4A5A6E',
+  primary: '#48DBFB', // main colour: primary buttons, selected pairs
+  primaryEdge: '#1FA9CC', // the darker lip under a primary button
+  primaryText: INK,
+  secondary: '#54A0FF',
+  secondaryEdge: '#2F6FD0',
+  border: '#DDE3EA',
+  borderStrong: '#B5C0CC',
+  success: '#1DD1A1', // fills: right answers, words the speech check heard
+  successEdge: '#0FA57E',
+  successText: '#0B7A5C', // text in success colour (passes contrast on white)
+  successSoft: '#1DD1A126',
+  error: '#C4252B', // wrong answers (no red in the palette, so a deep red)
+  errorEdge: '#8E1A1F',
+  errorSoft: '#C4252B1A',
+  inkYellow: '#8A5A00', // text in yellow
+  inkBlue: '#2A6FCC', // text in blue
+  inkGreen: '#0B7A5C', // text in green (same as successText)
 };
 
-// Matcha's nine color families (palette.config.json seeds), for icons, lesson
-// circles and celebrations.
+// The four palette colours, for icons, lesson circles, avatars and celebrations.
 export const palette = {
-  red: '#FD0000',
-  orange: '#C47620',
-  yellow: '#E8B800',
-  green: '#4D9900',
-  teal: '#2E6B5A',
-  cyan: '#3A7C7C',
-  blue: '#3A5E8C',
-  purple: '#6B4A8C',
-  pink: '#C44A70',
+  cyan: '#48DBFB',
+  blue: '#54A0FF',
+  yellow: '#FECA57',
+  green: '#1DD1A1',
 };
 
 // Astryx spacing runs in steps of 6 px.
@@ -50,16 +57,16 @@ export const fonts = {
 
 export const font = { body: 16, label: 13, title: 26, hero: 40 };
 
-export const radius = 12; // --radius-element: buttons, fields, options
-export const radiusLarge = 18; // --radius-container: cards and panels
+export const radius = 12; // buttons, fields, options
+export const radiusLarge = 18; // cards and panels
 
 // Icons: one size and stroke everywhere, so they look like one set.
 export const icon = { size: 22, large: 30, stroke: 2.25 };
 
-// --shadow-low, in React Native form.
+// A soft shadow in React Native form.
 export const shadow = {
-  shadowColor: '#3E481D',
-  shadowOpacity: 0.1,
+  shadowColor: INK,
+  shadowOpacity: 0.08,
   shadowRadius: 8,
   shadowOffset: { width: 0, height: 4 },
   elevation: 2,
