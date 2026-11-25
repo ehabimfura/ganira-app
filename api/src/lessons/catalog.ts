@@ -1,9 +1,10 @@
 // Level ids in the order they open on the path. The app has the same ids in
 // app/src/content/unit1.ts; keep the two lists in step.
-// Unit 1, "Taking a moto in Kigali": two greeting lessons, practice, calling a moto,
+// Unit 1, "Taking a moto in Kigali": a greeting, the Daisy video, two more greeting lessons, practice, calling a moto,
 // where to, how much, practice, then the full ride.
 export const LESSON_IDS = [
   "u1-hello",
+  "u1-daisy",
   "u1-thanks",
   "u1-practice-1",
   "u1-moto",

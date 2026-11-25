@@ -6,6 +6,7 @@ import { createRateLimiter } from "../auth/rate-limit.js";
 import { requireSession, type SessionInfo } from "../auth/session.js";
 import type { Database } from "../db.js";
 import { CHILD_PATH, dailyGoal, level } from "../onboarding.js";
+import { progressFor } from "../progress/summary.js";
 
 export const MAX_CHILDREN = 6;
 const WINDOW_MS = 15 * 60 * 1000;
@@ -29,6 +30,11 @@ const createChildSchema = z.object({
 const selectSchema = z.object({ pin: pin.optional() });
 const unlockSchema = z.object({ password: z.string().min(1).max(200) });
 const setPinSchema = z.object({ pin: pin.nullable() });
+// A reminder time in Kigali time, e.g. "17:30", or null for none.
+const reminderTime = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Use HH:MM").nullable();
+const childSettingsSchema = z
+  .object({ dailyGoalMinutes: dailyGoal.optional(), reminderTime: reminderTime.optional() })
+  .refine((s) => s.dailyGoalMinutes !== undefined || s.reminderTime !== undefined, "Nothing to change");
 
 // Parent mode: a parent account with no child profile open on this phone.
 function inParentMode(session: SessionInfo): boolean {
@@ -155,6 +161,55 @@ export function profileRoutes(db: Database) {
     }
     const pinHash = body.data.pin ? await hashSecret(body.data.pin) : null;
     await db.pool.query("UPDATE learners SET pin_hash = ? WHERE id = ?", [pinHash, profile.id]);
+    res.status(204).end();
+  });
+
+  // A child's progress and settings, as the parent sees them (FR 10.1).
+  router.get("/profiles/:id/progress", async (req, res) => {
+    if (refuseUnlessParentMode(res)) return;
+    const id = profileId.safeParse(req.params.id);
+    if (!id.success) return invalidInput(res, id.error);
+    const session: SessionInfo = res.locals.session;
+
+    const [rows] = await db.pool.query<RowDataPacket[]>(
+      "SELECT id, nickname, avatar, daily_goal_minutes, reminder_time FROM learners WHERE id = ? AND account_id = ? AND kind = 'CHILD'",
+      [id.data, session.accountId],
+    );
+    if (rows.length === 0) {
+      res.status(404).json({ error: "PROFILE_NOT_FOUND" });
+      return;
+    }
+    const child = rows[0];
+    res.json({
+      nickname: child.nickname,
+      avatar: child.avatar,
+      dailyGoalMinutes: Number(child.daily_goal_minutes),
+      reminderTime: child.reminder_time ? String(child.reminder_time).slice(0, 5) : null,
+      ...(await progressFor(db, child.id, new Date())),
+    });
+  });
+
+  // A parent changes a child's daily goal or reminder time (FR 10.2).
+  router.patch("/profiles/:id/settings", async (req, res) => {
+    if (refuseUnlessParentMode(res)) return;
+    const id = profileId.safeParse(req.params.id);
+    const body = childSettingsSchema.safeParse(req.body ?? {});
+    if (!id.success) return invalidInput(res, id.error);
+    if (!body.success) return invalidInput(res, body.error);
+    const session: SessionInfo = res.locals.session;
+
+    const profile = await findOwnProfile(db, session.accountId, id.data);
+    if (!profile || profile.kind !== "CHILD") {
+      res.status(404).json({ error: "PROFILE_NOT_FOUND" });
+      return;
+    }
+    const { dailyGoalMinutes, reminderTime: time } = body.data;
+    if (dailyGoalMinutes !== undefined) {
+      await db.pool.query("UPDATE learners SET daily_goal_minutes = ? WHERE id = ?", [dailyGoalMinutes, profile.id]);
+    }
+    if (time !== undefined) {
+      await db.pool.query("UPDATE learners SET reminder_time = ? WHERE id = ?", [time, profile.id]);
+    }
     res.status(204).end();
   });
 

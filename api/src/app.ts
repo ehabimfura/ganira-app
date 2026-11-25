@@ -3,6 +3,8 @@ import { authRoutes } from "./auth/routes.js";
 import type { Database } from "./db.js";
 import { lessonRoutes } from "./lessons/routes.js";
 import { practiceRoutes } from "./practice/routes.js";
+import { progressRoutes } from "./progress/routes.js";
+import { savedRoutes } from "./saved/routes.js";
 import { profileRoutes } from "./profiles/routes.js";
 import { noSpeechService, type Transcribe } from "./speech/client.js";
 import { speechRoutes } from "./speech/routes.js";
@@ -54,6 +56,8 @@ export function createApp(db: Database, { corsOrigins = [], transcribe = noSpeec
   app.use(profileRoutes(db));
   app.use(lessonRoutes(db, now));
   app.use(practiceRoutes(db, now));
+  app.use(progressRoutes(db, now));
+  app.use(savedRoutes(db));
 
   // Anything unexpected: log the details here, send the phone a plain message.
   app.use((error: unknown, _req: Request, res: Response, _next: NextFunction) => {

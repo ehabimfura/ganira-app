@@ -7,7 +7,11 @@ import { recordPractice, resultSchema } from "../practice/store.js";
 import { previousLesson } from "./catalog.js";
 
 // The lesson's answers, for the spaced review. Optional: older app versions send none.
-const completeSchema = z.object({ results: z.array(resultSchema).max(60).optional() });
+const completeSchema = z.object({
+  results: z.array(resultSchema).max(60).optional(),
+  // Time spent on the lesson, in seconds (capped at an hour).
+  seconds: z.number().int().min(0).max(3600).optional(),
+});
 
 export function lessonRoutes(db: Database, now: () => Date) {
   const router = Router();
@@ -49,7 +53,7 @@ export function lessonRoutes(db: Database, now: () => Date) {
       learnerId,
       lessonId,
     ]);
-    await recordPractice(db, learnerId, parsed.data.results ?? [], now());
+    await recordPractice(db, learnerId, parsed.data.results ?? [], now(), parsed.data.seconds ?? 0);
     res.status(204).end();
   });
 
