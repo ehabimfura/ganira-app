@@ -3,6 +3,30 @@
 Ganira (from *kuganira*, "to converse") is a speaking-first app for learning Kinyarwanda.
 It is built for diaspora families and for foreigners living in Rwanda.
 
+## Install on Android (APK)
+
+**Download the app:** https://expo.dev/artifacts/eas/DBY04DyAstW86R4WejuTp4b7scn8KGYG1o9TJ2IpCcg.apk (about 106 MB)
+
+Install steps on an Android phone:
+
+1. Open the link above in the phone's browser and download the file.
+2. When the download finishes, open the file from the notifications or the Downloads app.
+3. If the phone asks, allow installs from this browser (Settings → Apps → your browser → Install unknown apps).
+4. Tap Install, then Open.
+5. Sign in, or create an account. The app uses the live API on Azure.
+
+The APK is built in the cloud by Expo (EAS). To build it yourself, you need a free Expo account:
+
+```sh
+cd app
+npx eas-cli login          # sign in to your Expo account
+npx eas-cli build -p android --profile preview
+```
+
+The build already points at the live API on Azure (set in `app/eas.json`).
+
+iPhones cannot install APK files. An iPhone install needs an Apple Developer account and TestFlight, which is not set up yet.
+
 ## Setting up the project on your computer
 
 Follow these steps in order. Commands are run in the Terminal, from the folder that holds this README.
@@ -92,30 +116,6 @@ cd e2e
 npm install
 npm test
 ```
-
-## Install on Android (APK)
-
-**Download the app:** https://expo.dev/artifacts/eas/DBY04DyAstW86R4WejuTp4b7scn8KGYG1o9TJ2IpCcg.apk (about 106 MB)
-
-Install steps on an Android phone:
-
-1. Open the link above in the phone's browser and download the file.
-2. When the download finishes, open the file from the notifications or the Downloads app.
-3. If the phone asks, allow installs from this browser (Settings → Apps → your browser → Install unknown apps).
-4. Tap Install, then Open.
-5. Sign in, or create an account. The app uses the live API on Azure.
-
-The APK is built in the cloud by Expo (EAS). To build it yourself, you need a free Expo account:
-
-```sh
-cd app
-npx eas-cli login          # sign in to your Expo account
-npx eas-cli build -p android --profile preview
-```
-
-The build already points at the live API on Azure (set in `app/eas.json`).
-
-iPhones cannot install APK files. An iPhone install needs an Apple Developer account and TestFlight, which is not set up yet.
 
 ## Layout
 
